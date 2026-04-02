@@ -92,3 +92,44 @@ You MUST generate:
 - Update progress_tracking.md
 - Write activity log
 - Update state/current_state.md
+
+---
+
+## Definition of Done (MANDATORY)
+
+✅ Code Quality:
+- [ ] Code runs without errors
+- [ ] No console warnings
+- [ ] Clean code principles applied
+- [ ] No duplicate code
+- [ ] Meaningful variable names
+- [ ] Code reviewed (review/code_review.md)
+
+✅ API Quality:
+- [ ] All endpoints working
+- [ ] JWT token generation works
+- [ ] Token validation works
+- [ ] Error responses are consistent
+- [ ] Status codes correct (200, 201, 400, 401, etc.)
+
+✅ Testing:
+- [ ] Unit tests written
+- [ ] Unit tests pass (100%)
+- [ ] API tests pass (Postman/curl)
+- [ ] Edge cases tested
+- [ ] Error scenarios tested
+- [ ] Security tests passed
+
+✅ Compliance:
+- [ ] Checklist updated (checklist/01_backend_checklist.md)
+- [ ] State updated (state/01_current_state.md)
+- [ ] Activity logged (checklist/logs/01_activity_log.md)
+- [ ] No critical bugs
+- [ ] No blocking issues
+
+✅ Documentation:
+- [ ] Code has comments (why, not what)
+- [ ] API documented
+- [ ] Database schema documented
+
+**DO NOT mark task complete until ALL items checked**

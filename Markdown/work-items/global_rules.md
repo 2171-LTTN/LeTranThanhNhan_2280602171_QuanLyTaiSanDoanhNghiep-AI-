@@ -13,3 +13,12 @@ After finishing:
 - Update state
 
 NEVER skip tracking updates
+
+---
+
+## Definition of Done
+- Code runs
+- API works
+- Tests pass
+- Checklist updated
+- No critical bugs

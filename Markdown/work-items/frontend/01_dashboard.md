@@ -48,6 +48,49 @@ Display:
 
 ## UI Requirements
 - Modern dashboard layout
+- Responsive design
+- Color scheme consistent with design-system
+
+---
+
+## Definition of Done (MANDATORY)
+
+✅ UI/UX Quality:
+- [ ] Dashboard renders without errors
+- [ ] Layout responsive (mobile, tablet, desktop)
+- [ ] All statistics cards display correctly
+- [ ] Recent activity list shows data
+- [ ] Charts render (if implemented)
+- [ ] UI matches design specifications
+- [ ] No broken links or missing images
+
+✅ Functionality:
+- [ ] API calls are made (GET /api/assets, etc.)
+- [ ] Data refreshes correctly
+- [ ] Loading states shown
+- [ ] Error states handled
+- [ ] Empty states handled
+
+✅ Testing:
+- [ ] Component tests pass
+- [ ] API integration works
+- [ ] Manual testing on multiple browsers
+- [ ] No console errors
+- [ ] No performance issues (no lag)
+
+✅ Compliance:
+- [ ] Checklist updated (checklist/02_frontend_checklist.md)
+- [ ] State updated (state/01_current_state.md)
+- [ ] Activity logged (checklist/logs/01_activity_log.md)
+- [ ] Code reviewed
+
+✅ Code Quality:
+- [ ] Clean, readable code
+- [ ] No duplicate code
+- [ ] Proper error handling
+- [ ] Comments where needed
+
+**DO NOT mark task complete until ALL items checked**
 - Cards + table layout
 - Responsive
 
@@ -73,3 +116,12 @@ You MUST generate:
 - Update checklist/frontend_checklist.md
 - Update progress_tracking.md
 - Write activity log
+
+---
+
+## Definition of Done
+- Code runs
+- API works
+- Tests pass
+- Checklist updated
+- No critical bugs

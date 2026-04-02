@@ -51,6 +51,58 @@ Build a complete UI for managing assets.
 
 ---
 
+## Definition of Done (MANDATORY)
+
+✅ UI/UX Quality:
+- [ ] All pages render without errors
+- [ ] Layout responsive (mobile, tablet, desktop)
+- [ ] Table displays all assets correctly
+- [ ] Add/Edit forms are functional
+- [ ] UI matches design specifications
+- [ ] Form validation messages show correctly
+- [ ] Buttons are clickable and responsive
+
+✅ Functionality:
+- [ ] List page shows all assets
+- [ ] Add asset creates new record
+- [ ] Edit asset updates existing record
+- [ ] Delete asset removes record
+- [ ] Confirm dialogs work
+- [ ] API calls successful
+- [ ] Data persists after page reload
+
+✅ Error Handling:
+- [ ] Network errors handled
+- [ ] Validation errors shown
+- [ ] 404 errors handled
+- [ ] Permission errors handled
+- [ ] User gets clear error messages
+
+✅ Testing:
+- [ ] Component tests pass
+- [ ] All CRUD operations tested
+- [ ] Form validation works
+- [ ] No console errors
+- [ ] API integration verified
+- [ ] Manual testing on multiple browsers
+
+✅ Compliance:
+- [ ] Checklist updated (checklist/02_frontend_checklist.md)
+- [ ] State updated (state/01_current_state.md)
+- [ ] Activity logged (checklist/logs/01_activity_log.md)
+- [ ] Code reviewed
+
+✅ Code Quality:
+- [ ] Clean, readable React code
+- [ ] Components properly organized
+- [ ] No duplicate code
+- [ ] Proper error handling
+- [ ] Comments where needed
+
+**DO NOT mark task complete until ALL items checked**
+
+---
+
 ## UI Requirements
 - Clean UI using TailwindCSS
 - Responsive design
@@ -79,3 +131,12 @@ You MUST generate:
 - Mark completed tasks
 - Update progress_tracking.md
 - Log activity
+
+---
+
+## Definition of Done
+- Code runs
+- API works
+- Tests pass
+- Checklist updated
+- No critical bugs
