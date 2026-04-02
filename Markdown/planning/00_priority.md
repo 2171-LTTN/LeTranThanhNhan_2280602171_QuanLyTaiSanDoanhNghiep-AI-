@@ -147,6 +147,96 @@ Est. Time:             Est. Time:         Est. Time:
 
 ---
 
+## 🔗 DEPENDENCY CHECK (MANDATORY)
+
+**Before starting ANY task:**
+
+### Step 1: Identify Task Dependencies
+
+Each task has dependencies - must-complete-first tasks:
+
+```
+Auth (P0) → No dependencies
+Database (P0) → No dependencies
+
+Asset CRUD (P1) → Depends on: Auth (P0)
+Login UI (P1) → Depends on: Auth (P0)
+
+Asset UI (P2) → Depends on: Auth (P0) + Asset CRUD (P1) + Login UI (P1)
+Dashboard (P2) → Depends on: All P0 + P1
+```
+
+### Step 2: Verify All Dependencies Completed
+
+**Before starting task X:**
+
+Check:
+1. [ ] Are ALL dependencies completed?
+2. [ ] Are tests passing for dependencies?
+3. [ ] Are checklist items marked [x]?
+4. [ ] Can you verify they work?
+
+### Step 3: If Any Dependency Missing
+
+**DO NOT start current task**
+
+Instead:
+```
+1. Identify missing dependency
+2. Switch to that task
+3. Complete it 100%
+4. Come back to current task
+```
+
+**Example:**
+```
+You want to start: Asset Management (P1)
+Depends on: Auth (P0)
+
+Question: Is Auth complete?
+- NO → STOP
+- Go back and complete Auth first
+- Then come back to Asset Management
+```
+
+### Step 4: Circular Dependency (Rare)
+
+If task A depends on B, and B depends on A:
+```
+❌ Circular dependency detected
+↓
+Escalate to execution/recovery_mode.md
+↓
+Use different approach (mock, stub, or split)
+```
+
+---
+
+## 🧠 Dependency Graph
+
+```
+            START
+             ↓
+    ┌─────────┴─────────┐
+    ↓                   ↓
+  AUTH (P0)        DATABASE (P0)
+    ├─────────┬─────────┤
+    ↓         ↓         ↓
+ ASSET   LOGIN UI   HISTORY
+ CRUD(P1) (P1)      (P2)
+    ├─────────┬─────────┤
+    ↓         ↓         ↓
+ ASSET-UI  DASHBOARD  ADVANCED
+  (P2)      (P2)      (P3)
+    └─────────┴─────────┘
+             ↓
+           DONE
+```
+
+**Read:** Top to bottom, left to right
+
+---
+
 ## Current Status
 
 |Priority|Task|Status|ETA|
