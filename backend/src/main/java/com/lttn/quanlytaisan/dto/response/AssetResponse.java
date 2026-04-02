@@ -22,6 +22,13 @@ public class AssetResponse {
     private String assignedTo;
     private String assignedToName;
     private LocalDate purchaseDate;
+    private Double purchasePrice;
+    private String serialNumber;
+    private String brand;
+    private String model;
+    private LocalDate warrantyUntil;
+    private String location;
+    private String note;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -37,11 +37,23 @@ public class AssetService {
     public AssetResponse createAsset(CreateAssetRequest request, String performedBy) {
         log.info("Creating asset: '{}' by user: {}", request.getName(), performedBy);
 
+        if (assetRepository.findBySerialNumber(request.getSerialNumber()).isPresent()) {
+            log.warn("Asset creation failed - serial number already exists: {}", request.getSerialNumber());
+            throw new BusinessException("Serial number already exists: " + request.getSerialNumber());
+        }
+
         Asset asset = Asset.builder()
                 .name(request.getName().trim())
                 .category(request.getCategory().trim())
                 .status(AssetStatus.AVAILABLE)
                 .purchaseDate(parseDate(request.getPurchaseDate()))
+                .purchasePrice(request.getPurchasePrice())
+                .serialNumber(request.getSerialNumber())
+                .brand(request.getBrand())
+                .model(request.getModel())
+                .warrantyUntil(parseDate(request.getWarrantyUntil()))
+                .location(request.getLocation())
+                .note(request.getNote())
                 .createdAt(LocalDateTime.now())
                 .build();
 

@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AssetRepository extends MongoRepository<Asset, String> {
@@ -17,4 +18,8 @@ public interface AssetRepository extends MongoRepository<Asset, String> {
     List<Asset> findByAssignedTo(String userId);
 
     Page<Asset> findByAssignedTo(String userId, Pageable pageable);
+
+    Optional<Asset> findBySerialNumber(String serialNumber);
+
+    boolean existsBySerialNumber(String serialNumber);
 }

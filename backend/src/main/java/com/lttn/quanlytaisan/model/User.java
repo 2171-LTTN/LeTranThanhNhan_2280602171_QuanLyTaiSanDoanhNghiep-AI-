@@ -39,6 +39,15 @@ public class User {
     @Builder.Default
     private String role = "USER";
 
+    private String department;
+
+    private String position;
+
+    private String phone;
+
+    @Builder.Default
+    private Boolean isActive = true;
+
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 

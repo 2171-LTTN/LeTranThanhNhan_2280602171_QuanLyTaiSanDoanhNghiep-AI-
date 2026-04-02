@@ -7,10 +7,6 @@ import com.lttn.quanlytaisan.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/**
- * Shared mapper utility for Asset entity conversions.
- * Handles all asset-to-DTO transformations with user lookup.
- */
 @Component
 @RequiredArgsConstructor
 public class AssetMapper {
@@ -30,23 +26,13 @@ public class AssetMapper {
                 .assignedTo(asset.getAssignedTo())
                 .assignedToName(resolveUserName(asset.getAssignedTo()))
                 .purchaseDate(asset.getPurchaseDate())
-                .createdAt(asset.getCreatedAt())
-                .updatedAt(asset.getUpdatedAt())
-                .build();
-    }
-
-    public AssetResponse toResponseWithoutUserLookup(Asset asset) {
-        if (asset == null) {
-            return null;
-        }
-
-        return AssetResponse.builder()
-                .id(asset.getId())
-                .name(asset.getName())
-                .category(asset.getCategory())
-                .status(asset.getStatus())
-                .assignedTo(asset.getAssignedTo())
-                .purchaseDate(asset.getPurchaseDate())
+                .purchasePrice(asset.getPurchasePrice())
+                .serialNumber(asset.getSerialNumber())
+                .brand(asset.getBrand())
+                .model(asset.getModel())
+                .warrantyUntil(asset.getWarrantyUntil())
+                .location(asset.getLocation())
+                .note(asset.getNote())
                 .createdAt(asset.getCreatedAt())
                 .updatedAt(asset.getUpdatedAt())
                 .build();
