@@ -15,6 +15,7 @@ class JwtUtilTest {
         jwtUtil = new JwtUtil();
         ReflectionTestUtils.setField(jwtUtil, "secret", "YourSuperSecretKeyForJWTTokenGenerationThatIsAtLeast256BitsLong!!");
         ReflectionTestUtils.setField(jwtUtil, "expiration", 86400000L);
+        jwtUtil.init();
     }
 
     @Test
@@ -63,18 +64,21 @@ class JwtUtilTest {
     }
 
     @Test
-    void isTokenExpired_NewToken_ReturnsFalse() {
-        String token = jwtUtil.generateToken("test@example.com");
-
-        assertFalse(jwtUtil.isTokenExpired(token));
-    }
-
-    @Test
     void extractRole_Success() {
         String token = jwtUtil.generateToken("test@example.com", "ADMIN");
 
         String role = jwtUtil.extractRole(token);
 
         assertEquals("ADMIN", role);
+    }
+
+    @Test
+    void extractExpiration_Success() {
+        String token = jwtUtil.generateToken("test@example.com");
+
+        var expiration = jwtUtil.extractExpiration(token);
+
+        assertNotNull(expiration);
+        assertTrue(expiration.after(new java.util.Date()));
     }
 }

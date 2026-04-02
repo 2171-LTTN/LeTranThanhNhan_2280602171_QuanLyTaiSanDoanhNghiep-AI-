@@ -1,11 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
-import { useAuth } from '../context/AuthContext';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -19,9 +17,8 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const data = await authService.register({ name, email, password });
-      login(data);
-      navigate('/dashboard');
+      await authService.register({ name, email, password });
+      navigate('/login');
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'response' in err) {
         const axiosErr = err as { response?: { data?: { message?: string } } };

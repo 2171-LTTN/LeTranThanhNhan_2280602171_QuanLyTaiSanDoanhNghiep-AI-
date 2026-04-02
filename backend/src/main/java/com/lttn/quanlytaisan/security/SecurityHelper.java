@@ -24,7 +24,7 @@ public class SecurityHelper {
     public String getCurrentUserEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated()) {
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
             log.warn("Attempted to get current user but no authentication found");
             throw new BusinessException("No authenticated user found");
         }
@@ -53,6 +53,10 @@ public class SecurityHelper {
         } catch (BusinessException e) {
             return defaultValue;
         }
+    }
+
+    public String getCurrentUserEmailOrThrow() {
+        return getCurrentUserEmail();
     }
 
     /**

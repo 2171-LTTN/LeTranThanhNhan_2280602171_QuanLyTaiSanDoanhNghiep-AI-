@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { currentUser, logout } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -52,12 +52,12 @@ export default function Layout() {
           <div className="flex items-center gap-3 mb-3">
             <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center">
               <span className="text-sm font-medium text-indigo-700">
-                {user?.name?.charAt(0).toUpperCase()}
+                {currentUser?.name?.charAt(0).toUpperCase() || '?'}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
-              <p className="text-xs text-gray-500">{user?.role}</p>
+              <p className="text-sm font-medium text-gray-900 truncate">{currentUser?.name || 'User'}</p>
+              <p className="text-xs text-gray-500">{currentUser?.role || 'Guest'}</p>
             </div>
           </div>
           <button

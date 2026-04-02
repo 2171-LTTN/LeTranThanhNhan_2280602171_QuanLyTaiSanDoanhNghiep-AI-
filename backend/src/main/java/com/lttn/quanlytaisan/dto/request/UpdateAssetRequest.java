@@ -17,4 +17,14 @@ public class UpdateAssetRequest {
 
     @Size(min = 1, max = 100, message = "Category must be between 1 and 100 characters")
     private String category;
+
+    private String serialNumber;
+
+    private String brand;
+
+    private String model;
+
+    private String location;
+
+    private String note;
 }

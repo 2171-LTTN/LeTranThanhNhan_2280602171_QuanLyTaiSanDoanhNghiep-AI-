@@ -131,6 +131,11 @@ public class AssetService {
 
         Asset asset = findAssetByIdOrThrow(id);
 
+        if (asset.getStatus() == AssetStatus.IN_USE) {
+            log.warn("Cannot delete asset that is currently in use: {}", asset.getId());
+            throw new BusinessException("Cannot delete asset that is currently assigned. Please return it first.");
+        }
+
         assetHistoryService.saveHistory(
                 asset.getId(),
                 asset.getName(),
@@ -157,6 +162,11 @@ public class AssetService {
                     log.warn("Assignment failed - user not found: {}", request.getUserId());
                     return new ResourceNotFoundException("User not found: " + request.getUserId());
                 });
+
+        if (user.getIsActive() == null || !user.getIsActive()) {
+            log.warn("Assignment failed - user is not active: {}", request.getUserId());
+            throw new BusinessException("Cannot assign to inactive user");
+        }
 
         asset.setAssignedTo(user.getId());
         asset.setStatus(AssetStatus.IN_USE);
