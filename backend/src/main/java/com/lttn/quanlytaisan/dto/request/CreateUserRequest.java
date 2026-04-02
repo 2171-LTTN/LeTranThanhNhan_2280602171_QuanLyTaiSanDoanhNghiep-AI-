@@ -1,4 +1,4 @@
-package com.lttn.quanlytaisan.dto\request;
+package com.lttn.quanlytaisan.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

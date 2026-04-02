@@ -1,4 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { userService } from '../services/userService';
 import type { User, CreateUserRequest } from '../types';
 
@@ -33,6 +34,7 @@ function Modal({ title, onClose, children }: ModalProps) {
 }
 
 export default function UsersPage() {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -44,7 +46,7 @@ export default function UsersPage() {
   const [formName, setFormName] = useState('');
   const [formEmail, setFormEmail] = useState('');
   const [formPassword, setFormPassword] = useState('');
-  const [formRole, setFormRole] = useState('STAFF');
+  const [formRole, setFormRole] = useState('USER');
 
   const fetchUsers = async () => {
     try {
@@ -69,7 +71,7 @@ export default function UsersPage() {
     setFormName('');
     setFormEmail('');
     setFormPassword('');
-    setFormRole('STAFF');
+    setFormRole('USER');
   };
 
   const handleAdd = async (e: FormEvent) => {
@@ -86,9 +88,9 @@ export default function UsersPage() {
       setShowAddModal(false);
       resetForm();
       await fetchUsers();
-      showSuccess('User created successfully.');
+      showSuccess(t('users.userCreated'));
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to create user.';
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errors.saveFailed');
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -102,9 +104,9 @@ export default function UsersPage() {
       await userService.delete(deleteTarget.id);
       setDeleteTarget(null);
       await fetchUsers();
-      showSuccess('User deleted successfully.');
+      showSuccess(t('users.userDeleted'));
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to delete user.';
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errors.saveFailed');
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -127,8 +129,8 @@ export default function UsersPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Users</h1>
-          <p className="text-gray-500 mt-1">Manage system users</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('users.title')}</h1>
+          <p className="text-gray-500 mt-1">{t('common.filter')}</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -137,7 +139,7 @@ export default function UsersPage() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Add User
+          {t('users.addUser')}
         </button>
       </div>
 
@@ -150,7 +152,7 @@ export default function UsersPage() {
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
           {error}
-          <button onClick={() => setError('')} className="ml-2 font-medium underline">Dismiss</button>
+          <button onClick={() => setError('')} className="ml-2 font-medium underline">{t('common.confirm')}</button>
         </div>
       )}
 
@@ -159,15 +161,15 @@ export default function UsersPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                {['Name', 'Email', 'Role', 'Actions'].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                {['users.fullName', 'users.email', 'users.role', 'common.actions'].map((h) => (
+                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t(h)}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-gray-500">No users found.</td>
+                  <td colSpan={4} className="px-6 py-12 text-center text-gray-500">{t('common.noData')}</td>
                 </tr>
               ) : (
                 users.map((user) => (
@@ -197,30 +199,30 @@ export default function UsersPage() {
 
       {/* Add User Modal */}
       {showAddModal && (
-        <Modal title="Add User" onClose={() => { setShowAddModal(false); resetForm(); }}>
+        <Modal title={t('users.addUser')} onClose={() => { setShowAddModal(false); resetForm(); }}>
           <form onSubmit={handleAdd} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('users.fullName')} *</label>
               <input value={formName} onChange={(e) => setFormName(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="John Doe" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('users.email')} *</label>
               <input type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="john@company.com" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.password')} *</label>
               <input type="password" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} required minLength={6} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Min. 6 characters" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('users.role')} *</label>
               <select value={formRole} onChange={(e) => setFormRole(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
-                <option value="STAFF">Staff</option>
-                <option value="ADMIN">Admin</option>
+                <option value="USER">{t('users.user')}</option>
+                <option value="ADMIN">{t('users.admin')}</option>
               </select>
             </div>
             <div className="flex justify-end gap-3 pt-2">
-              <button type="button" onClick={() => { setShowAddModal(false); resetForm(); }} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-              <button type="submit" disabled={submitting} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50">{submitting ? 'Creating...' : 'Create'}</button>
+              <button type="button" onClick={() => { setShowAddModal(false); resetForm(); }} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">{t('common.cancel')}</button>
+              <button type="submit" disabled={submitting} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50">{submitting ? '...' : t('common.create')}</button>
             </div>
           </form>
         </Modal>
@@ -228,13 +230,13 @@ export default function UsersPage() {
 
       {/* Delete Confirmation */}
       {deleteTarget && (
-        <Modal title="Delete User" onClose={() => setDeleteTarget(null)}>
+        <Modal title={t('users.deleteUser')} onClose={() => setDeleteTarget(null)}>
           <p className="text-gray-600 mb-6">
-            Are you sure you want to delete <strong className="text-gray-900">{deleteTarget.name}</strong>? This action cannot be undone.
+            {t('users.deleteConfirm')} <strong className="text-gray-900">{deleteTarget.name}</strong>?
           </p>
           <div className="flex justify-end gap-3">
-            <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-            <button onClick={handleDelete} disabled={submitting} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50">{submitting ? 'Deleting...' : 'Delete'}</button>
+            <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">{t('common.cancel')}</button>
+            <button onClick={handleDelete} disabled={submitting} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50">{submitting ? '...' : t('common.delete')}</button>
           </div>
         </Modal>
       )}

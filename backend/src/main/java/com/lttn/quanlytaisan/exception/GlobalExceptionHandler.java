@@ -1,6 +1,8 @@
 package com.lttn.quanlytaisan.exception;
 
 import com.lttn.quanlytaisan.dto.response.ApiResponse;
+import com.lttn.quanlytaisan.service.I18nService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +21,10 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 @Slf4j
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    private final I18nService i18n;
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleValidationExceptions(
@@ -28,12 +33,11 @@ public class GlobalExceptionHandler {
         Map<String, String> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
                 .collect(Collectors.toMap(
                         FieldError::getField,
-                        error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : "Invalid value",
+                        error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : i18n.getMessage("validation.required"),
                         (existing, replacement) -> existing
                 ));
 
         Map<String, Object> errorBody = new HashMap<>();
-        errorBody.put("message", "Validation failed");
         errorBody.put("errors", fieldErrors);
 
         log.warn("Validation failed for request to {}: {}", request.getDescription(false), fieldErrors);
@@ -42,7 +46,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.<Map<String, Object>>builder()
                         .success(false)
                         .data(errorBody)
-                        .message("Validation failed")
+                        .message(i18n.getMessage("validation.required"))
                         .build());
     }
 
@@ -67,7 +71,7 @@ public class GlobalExceptionHandler {
         log.warn("Bad credentials for request to {}: {}", request.getDescription(false), ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error("Invalid email or password"));
+                .body(ApiResponse.error(i18n.getMessage("auth.login.failed")));
     }
 
     @ExceptionHandler(AuthenticationException.class)
@@ -75,7 +79,7 @@ public class GlobalExceptionHandler {
         log.warn("Authentication failed for request to {}: {}", request.getDescription(false), ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error("Authentication failed"));
+                .body(ApiResponse.error(i18n.getMessage("auth.unauthorized")));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -83,7 +87,7 @@ public class GlobalExceptionHandler {
         log.warn("Access denied for request to {}: {}", request.getDescription(false), ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error("Access denied: insufficient permissions"));
+                .body(ApiResponse.error(i18n.getMessage("auth.forbidden")));
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -99,6 +103,6 @@ public class GlobalExceptionHandler {
         log.error("Unexpected error for request to {}: {}", request.getDescription(false), ex.getMessage(), ex);
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("An unexpected error occurred"));
+                .body(ApiResponse.error(i18n.getMessage("system.error")));
     }
 }

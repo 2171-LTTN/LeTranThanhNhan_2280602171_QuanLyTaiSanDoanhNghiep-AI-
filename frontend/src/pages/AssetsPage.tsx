@@ -1,4 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { assetService } from '../services/assetService';
 import { userService } from '../services/userService';
 import type { Asset, User } from '../types';
@@ -34,7 +35,14 @@ function Modal({ title, onClose, children }: ModalProps) {
   );
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  AVAILABLE: 'assets.statusAvailable',
+  IN_USE: 'assets.statusInUse',
+  BROKEN: 'assets.statusBroken',
+};
+
 export default function AssetsPage() {
+  const { t } = useTranslation();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +71,7 @@ export default function AssetsPage() {
       const data = await assetService.getAll();
       setAssets(data);
     } catch {
-      setError('Failed to load assets.');
+      setError(t('errors.loadFailed'));
     }
   };
 
@@ -123,9 +131,9 @@ export default function AssetsPage() {
       setShowAddModal(false);
       resetForm();
       await fetchAssets();
-      showSuccess('Asset created successfully.');
+      showSuccess(t('assets.assetCreated'));
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to create asset.';
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errors.saveFailed');
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -141,9 +149,9 @@ export default function AssetsPage() {
       setShowAssignModal(null);
       resetForm();
       await fetchAssets();
-      showSuccess('Asset assigned successfully.');
+      showSuccess(t('assets.assignSuccess'));
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to assign asset.';
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errors.saveFailed');
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -154,9 +162,9 @@ export default function AssetsPage() {
     try {
       await assetService.return(asset.id);
       await fetchAssets();
-      showSuccess('Asset returned successfully.');
+      showSuccess(t('assets.returnSuccess'));
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to return asset.';
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errors.saveFailed');
       setError(msg);
     }
   };
@@ -168,9 +176,9 @@ export default function AssetsPage() {
       await assetService.delete(deleteTarget.id);
       setDeleteTarget(null);
       await fetchAssets();
-      showSuccess('Asset deleted successfully.');
+      showSuccess(t('assets.assetDeleted'));
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to delete asset.';
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errors.saveFailed');
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -193,8 +201,8 @@ export default function AssetsPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Assets</h1>
-          <p className="text-gray-500 mt-1">Manage company assets</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('assets.title')}</h1>
+          <p className="text-gray-500 mt-1">{t('common.filter')}</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -203,7 +211,7 @@ export default function AssetsPage() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Add Asset
+          {t('assets.addAsset')}
         </button>
       </div>
 
@@ -216,7 +224,7 @@ export default function AssetsPage() {
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
           {error}
-          <button onClick={() => setError('')} className="ml-2 font-medium underline">Dismiss</button>
+          <button onClick={() => setError('')} className="ml-2 font-medium underline">{t('common.confirm')}</button>
         </div>
       )}
 
@@ -225,15 +233,15 @@ export default function AssetsPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                {['Name', 'Category', 'Status', 'Assigned To', 'Location', 'Actions'].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                {['assets.assetName', 'assets.category', 'assets.status', 'assets.assignedTo', 'assets.location', 'common.actions'].map((h) => (
+                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t(h)}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {assets.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">No assets found.</td>
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">{t('common.noData')}</td>
                 </tr>
               ) : (
                 assets.map((asset) => (
@@ -242,7 +250,7 @@ export default function AssetsPage() {
                     <td className="px-6 py-4 text-sm text-gray-600">{asset.category}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[asset.status] || 'bg-gray-100 text-gray-700'}`}>
-                        {asset.status.replace('_', ' ')}
+                        {t(STATUS_LABELS[asset.status] || asset.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">{asset.assignedToName || '—'}</td>
@@ -253,7 +261,7 @@ export default function AssetsPage() {
                           onClick={() => { setShowAssignModal(asset); fetchUsers(); }}
                           className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
                         >
-                          Assign
+                          {t('assets.assign')}
                         </button>
                       )}
                       {asset.status === 'IN_USE' && (
@@ -261,14 +269,14 @@ export default function AssetsPage() {
                           onClick={() => handleReturn(asset)}
                           className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                         >
-                          Return
+                          {t('assets.return')}
                         </button>
                       )}
                       <button
                         onClick={() => setDeleteTarget(asset)}
                         className="text-xs text-red-600 hover:text-red-800 font-medium"
                       >
-                        Delete
+                        {t('common.delete')}
                       </button>
                     </td>
                   </tr>
@@ -281,59 +289,59 @@ export default function AssetsPage() {
 
       {/* Add Asset Modal */}
       {showAddModal && (
-        <Modal title="Add Asset" onClose={() => { setShowAddModal(false); resetForm(); }}>
+        <Modal title={t('assets.addAsset')} onClose={() => { setShowAddModal(false); resetForm(); }}>
           <form onSubmit={handleAdd} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('assets.assetName')} *</label>
                 <input value={formName} onChange={(e) => setFormName(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Dell Laptop XPS 15" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('assets.category')} *</label>
                 <input value={formCategory} onChange={(e) => setFormCategory(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Laptop" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Serial Number *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('assets.serialNumber')} *</label>
                 <input value={formSerialNumber} onChange={(e) => setFormSerialNumber(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. SN123456" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Brand *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('assets.brand')} *</label>
                 <input value={formBrand} onChange={(e) => setFormBrand(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Dell" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Model *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('assets.model')} *</label>
                 <input value={formModel} onChange={(e) => setFormModel(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. XPS 15" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('assets.location')} *</label>
                 <input value={formLocation} onChange={(e) => setFormLocation(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Office Floor 1" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Price (VND)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('assets.purchasePrice')} (VND)</label>
                 <input type="number" value={formPurchasePrice} onChange={(e) => setFormPurchasePrice(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. 25000000" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('assets.purchaseDate')}</label>
                 <input type="date" value={formPurchaseDate} onChange={(e) => setFormPurchaseDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Warranty Until</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('assets.warrantyExpiry')}</label>
               <input type="date" value={formWarrantyUntil} onChange={(e) => setFormWarrantyUntil(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('assets.note')}</label>
               <textarea value={formNote} onChange={(e) => setFormNote(e.target.value)} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Optional notes..."></textarea>
             </div>
             <div className="flex justify-end gap-3 pt-2">
-              <button type="button" onClick={() => { setShowAddModal(false); resetForm(); }} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-              <button type="submit" disabled={submitting} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50">{submitting ? 'Creating...' : 'Create'}</button>
+              <button type="button" onClick={() => { setShowAddModal(false); resetForm(); }} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">{t('common.cancel')}</button>
+              <button type="submit" disabled={submitting} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50">{submitting ? '...' : t('common.create')}</button>
             </div>
           </form>
         </Modal>
@@ -341,18 +349,18 @@ export default function AssetsPage() {
 
       {/* Assign Modal */}
       {showAssignModal && (
-        <Modal title={`Assign: ${showAssignModal.name}`} onClose={() => { setShowAssignModal(null); resetForm(); }}>
+        <Modal title={`${t('assets.assignAsset')}: ${showAssignModal.name}`} onClose={() => { setShowAssignModal(null); resetForm(); }}>
           <form onSubmit={handleAssign} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Select User *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('assets.selectUser')} *</label>
               <select value={formAssignUserId} onChange={(e) => setFormAssignUserId(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
-                <option value="">— Choose a user —</option>
+                <option value="">— {t('assets.selectUser')} —</option>
                 {users.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
               </select>
             </div>
             <div className="flex justify-end gap-3 pt-2">
-              <button type="button" onClick={() => { setShowAssignModal(null); resetForm(); }} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-              <button type="submit" disabled={submitting || !formAssignUserId} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50">{submitting ? 'Assigning...' : 'Assign'}</button>
+              <button type="button" onClick={() => { setShowAssignModal(null); resetForm(); }} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">{t('common.cancel')}</button>
+              <button type="submit" disabled={submitting || !formAssignUserId} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50">{submitting ? '...' : t('assets.assign')}</button>
             </div>
           </form>
         </Modal>
@@ -360,13 +368,13 @@ export default function AssetsPage() {
 
       {/* Delete Confirmation */}
       {deleteTarget && (
-        <Modal title="Delete Asset" onClose={() => setDeleteTarget(null)}>
+        <Modal title={t('assets.deleteAsset')} onClose={() => setDeleteTarget(null)}>
           <p className="text-gray-600 mb-6">
-            Are you sure you want to delete <strong className="text-gray-900">{deleteTarget.name}</strong>? This action cannot be undone.
+            {t('assets.deleteConfirm')} <strong className="text-gray-900">{deleteTarget.name}</strong>?
           </p>
           <div className="flex justify-end gap-3">
-            <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-            <button onClick={handleDelete} disabled={submitting} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50">{submitting ? 'Deleting...' : 'Delete'}</button>
+            <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">{t('common.cancel')}</button>
+            <button onClick={handleDelete} disabled={submitting} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50">{submitting ? '...' : t('common.delete')}</button>
           </div>
         </Modal>
       )}
