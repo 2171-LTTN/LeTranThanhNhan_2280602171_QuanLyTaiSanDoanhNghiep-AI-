@@ -38,6 +38,15 @@ READ: execution/00_enforcement.md + planning/00_priority.md
    - Check performance
    - Apply lessons_learned fixes
 
+### PHASE 3.5: OPTIMIZATION & REFACTORING (NEW)
+9.5. ✅ **Optimize & Refactor** - Improve code quality
+   - **Performance**: Check for N+1 queries, unnecessary loops, large allocations
+   - **Readability**: Simplify complex logic, extract methods, improve variable names
+   - **Duplication**: Remove copy-paste, extract common patterns
+   - **Best practices**: Apply design patterns, follow conventions
+   - **Standards**: Ensure design-system compliance
+   - Result: Code not only works, but is GOOD
+
 ### PHASE 4: COMPLETION
 10. ✅ **Update tracking** - Mark completion
    - Update checklist (checklist/01_backend_checklist.md or 02_frontend_checklist.md)
