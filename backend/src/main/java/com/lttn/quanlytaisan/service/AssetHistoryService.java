@@ -1,11 +1,11 @@
 package com.lttn.quanlytaisan.service;
 
-import com.lttn.quanlytaisan.dto.request.AssignAssetRequest;
 import com.lttn.quanlytaisan.dto.response.AssetHistoryResponse;
 import com.lttn.quanlytaisan.model.AssetAction;
 import com.lttn.quanlytaisan.model.AssetHistory;
 import com.lttn.quanlytaisan.repository.AssetHistoryRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AssetHistoryService {
 
     private final AssetHistoryRepository assetHistoryRepository;
@@ -22,12 +23,22 @@ public class AssetHistoryService {
                                     String performedBy, AssetAction action, String details) {
         AssetHistory history = AssetHistory.builder()
                 .assetId(assetId)
+                .assetName(assetName)
                 .userId(userId)
+                .userName(userName)
                 .performedBy(performedBy)
                 .action(action)
                 .details(details)
                 .build();
         return assetHistoryRepository.save(history);
+    }
+
+    public List<AssetHistoryResponse> getAllHistories() {
+        List<AssetHistory> histories = assetHistoryRepository
+                .findAll(Sort.by(Sort.Direction.DESC, "timestamp"));
+        return histories.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
     public List<AssetHistoryResponse> getAssetHistory(String assetId) {
@@ -52,7 +63,9 @@ public class AssetHistoryService {
         return AssetHistoryResponse.builder()
                 .id(history.getId())
                 .assetId(history.getAssetId())
+                .assetName(history.getAssetName())
                 .userId(history.getUserId())
+                .userName(history.getUserName())
                 .performedBy(history.getPerformedBy())
                 .action(history.getAction())
                 .details(history.getDetails())

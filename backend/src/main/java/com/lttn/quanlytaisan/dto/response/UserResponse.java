@@ -15,4 +15,7 @@ public class UserResponse {
     private String name;
     private String email;
     private String role;
+    private String department;
+    private String position;
+    private String phone;
 }

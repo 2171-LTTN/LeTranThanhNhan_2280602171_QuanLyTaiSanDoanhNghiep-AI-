@@ -20,11 +20,12 @@ import java.time.LocalDateTime;
  * Only runs when "dev" or "seed" profile is active.
  *
  * To run: Add @ActiveProfiles("seed") or run with --spring.profiles.active=seed
- * Or call directly via API endpoint.
+ * NEVER run in production - passwords are logged in summary.
  */
 @Configuration
 @RequiredArgsConstructor
 @Slf4j
+@Profile({"dev", "seed"})
 public class DataSeederConfig {
 
     private final PasswordEncoder passwordEncoder;
@@ -547,10 +548,6 @@ public class DataSeederConfig {
             log.info("Total histories: {}", assetHistoryRepository.count());
             log.info("Time taken: {} ms", (endTime - startTime));
             log.info("");
-            log.info("=== LOGIN CREDENTIALS ===");
-            log.info("Admin: admin@company.com / password123");
-            log.info("User:  mai.tran@company.com / password123");
-            log.info("");
             log.info("=== ASSET STATUS SUMMARY ===");
             log.info("In Use: {}", assetRepository.findByStatus(AssetStatus.IN_USE,
                 org.springframework.data.domain.Pageable.unpaged()).getTotalElements());
@@ -558,6 +555,7 @@ public class DataSeederConfig {
                 org.springframework.data.domain.Pageable.unpaged()).getTotalElements());
             log.info("Broken: {}", assetRepository.findByStatus(AssetStatus.BROKEN,
                 org.springframework.data.domain.Pageable.unpaged()).getTotalElements());
+            // NOTE: Credentials are NOT logged to avoid security risks in production
         };
     }
 }

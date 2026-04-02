@@ -2,9 +2,8 @@ package com.lttn.quanlytaisan.controller;
 
 import com.lttn.quanlytaisan.dto.response.ApiResponse;
 import com.lttn.quanlytaisan.dto.response.UserResponse;
-import com.lttn.quanlytaisan.mapper.UserMapper;
-import com.lttn.quanlytaisan.model.User;
-import com.lttn.quanlytaisan.repository.UserRepository;
+import com.lttn.quanlytaisan.security.SecurityHelper;
+import com.lttn.quanlytaisan.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -22,8 +21,8 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class UserController {
 
-    private final UserRepository userRepository;
-    private final UserMapper userMapper;
+    private final UserService userService;
+    private final SecurityHelper securityHelper;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -34,18 +33,18 @@ public class UserController {
         log.debug("GET /api/users - page: {}, size: {}", page, size);
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<User> users = userRepository.findAll(pageable);
-        Page<UserResponse> response = users.map(userMapper::toResponse);
+        Page<UserResponse> users = userService.getAllUsers(pageable);
 
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(users));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or #id == authentication.name")
     public ResponseEntity<ApiResponse<UserResponse>> getUserById(@PathVariable String id) {
         log.debug("GET /api/users/{}", id);
 
-        return userRepository.findById(id)
-                .map(user -> ResponseEntity.ok(ApiResponse.success(userMapper.toResponse(user))))
-                .orElse(ResponseEntity.notFound().build());
+        UserResponse user = userService.getUserById(id);
+
+        return ResponseEntity.ok(ApiResponse.success(user));
     }
 }

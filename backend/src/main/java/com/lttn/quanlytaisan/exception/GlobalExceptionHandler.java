@@ -15,26 +15,35 @@ import org.springframework.web.context.request.WebRequest;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationExceptions(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleValidationExceptions(
             MethodArgumentNotValidException ex, WebRequest request) {
 
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach(error -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
-        });
+        Map<String, String> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
+                .collect(Collectors.toMap(
+                        FieldError::getField,
+                        error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : "Invalid value",
+                        (existing, replacement) -> existing
+                ));
 
-        log.warn("Validation failed for request to {}: {}", request.getDescription(false), errors);
+        Map<String, Object> errorBody = new HashMap<>();
+        errorBody.put("message", "Validation failed");
+        errorBody.put("errors", fieldErrors);
+
+        log.warn("Validation failed for request to {}: {}", request.getDescription(false), fieldErrors);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Validation failed"));
+                .body(ApiResponse.<Map<String, Object>>builder()
+                        .success(false)
+                        .data(errorBody)
+                        .message("Validation failed")
+                        .build());
     }
 
     @ExceptionHandler(BusinessException.class)

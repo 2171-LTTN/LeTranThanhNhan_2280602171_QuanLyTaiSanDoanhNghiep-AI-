@@ -10,7 +10,6 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('STAFF');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +19,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const data = await authService.register({ name, email, password, role });
+      const data = await authService.register({ name, email, password });
       login(data);
       navigate('/dashboard');
     } catch (err: unknown) {
@@ -94,21 +93,6 @@ export default function RegisterPage() {
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
               placeholder="Min. 6 characters"
             />
-          </div>
-
-          <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-              Role
-            </label>
-            <select
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors bg-white"
-            >
-              <option value="STAFF">Staff</option>
-              <option value="ADMIN">Admin</option>
-            </select>
           </div>
 
           <button

@@ -1,10 +1,20 @@
 import api from './api';
 import type { Asset, CreateAssetRequest, UpdateAssetRequest, AssignAssetRequest } from '../types';
 
+interface PageAssetResponse {
+  content: Asset[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+}
+
 export const assetService = {
-  getAll: async (): Promise<Asset[]> => {
-    const response = await api.get<{ data: Asset[] }>('/assets');
-    return response.data.data;
+  getAll: async (page: number = 0, size: number = 100): Promise<Asset[]> => {
+    const response = await api.get<{ data: PageAssetResponse }>('/assets', {
+      params: { page, size },
+    });
+    return response.data.data.content;
   },
 
   getById: async (id: string): Promise<Asset> => {

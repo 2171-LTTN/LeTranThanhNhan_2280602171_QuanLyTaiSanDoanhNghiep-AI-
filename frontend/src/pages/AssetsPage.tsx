@@ -48,8 +48,14 @@ export default function AssetsPage() {
   // Form states
   const [formName, setFormName] = useState('');
   const [formCategory, setFormCategory] = useState('');
-  const [formStatus, setFormStatus] = useState('AVAILABLE');
   const [formPurchaseDate, setFormPurchaseDate] = useState('');
+  const [formPurchasePrice, setFormPurchasePrice] = useState('');
+  const [formSerialNumber, setFormSerialNumber] = useState('');
+  const [formBrand, setFormBrand] = useState('');
+  const [formModel, setFormModel] = useState('');
+  const [formWarrantyUntil, setFormWarrantyUntil] = useState('');
+  const [formLocation, setFormLocation] = useState('');
+  const [formNote, setFormNote] = useState('');
   const [formAssignUserId, setFormAssignUserId] = useState('');
 
   const fetchAssets = async () => {
@@ -87,8 +93,14 @@ export default function AssetsPage() {
   const resetForm = () => {
     setFormName('');
     setFormCategory('');
-    setFormStatus('AVAILABLE');
     setFormPurchaseDate('');
+    setFormPurchasePrice('');
+    setFormSerialNumber('');
+    setFormBrand('');
+    setFormModel('');
+    setFormWarrantyUntil('');
+    setFormLocation('');
+    setFormNote('');
     setFormAssignUserId('');
   };
 
@@ -99,8 +111,14 @@ export default function AssetsPage() {
       await assetService.create({
         name: formName,
         category: formCategory,
-        status: formStatus,
         purchaseDate: formPurchaseDate || undefined,
+        purchasePrice: formPurchasePrice ? parseFloat(formPurchasePrice) : undefined,
+        serialNumber: formSerialNumber,
+        brand: formBrand,
+        model: formModel,
+        warrantyUntil: formWarrantyUntil || undefined,
+        location: formLocation,
+        note: formNote || undefined,
       });
       setShowAddModal(false);
       resetForm();
@@ -207,7 +225,7 @@ export default function AssetsPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                {['Name', 'Category', 'Status', 'Assigned To', 'Purchase Date', 'Actions'].map((h) => (
+                {['Name', 'Category', 'Status', 'Assigned To', 'Location', 'Actions'].map((h) => (
                   <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -228,7 +246,7 @@ export default function AssetsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">{asset.assignedToName || '—'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{asset.purchaseDate || '—'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{asset.location || '—'}</td>
                     <td className="px-6 py-4 flex items-center gap-2">
                       {asset.status === 'AVAILABLE' && (
                         <button
@@ -265,24 +283,53 @@ export default function AssetsPage() {
       {showAddModal && (
         <Modal title="Add Asset" onClose={() => { setShowAddModal(false); resetForm(); }}>
           <form onSubmit={handleAdd} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-              <input value={formName} onChange={(e) => setFormName(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Dell Laptop XPS 15" />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <input value={formName} onChange={(e) => setFormName(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Dell Laptop XPS 15" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                <input value={formCategory} onChange={(e) => setFormCategory(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Laptop" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Serial Number *</label>
+                <input value={formSerialNumber} onChange={(e) => setFormSerialNumber(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. SN123456" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Brand *</label>
+                <input value={formBrand} onChange={(e) => setFormBrand(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Dell" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Model *</label>
+                <input value={formModel} onChange={(e) => setFormModel(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. XPS 15" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
+                <input value={formLocation} onChange={(e) => setFormLocation(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Office Floor 1" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Price (VND)</label>
+                <input type="number" value={formPurchasePrice} onChange={(e) => setFormPurchasePrice(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. 25000000" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Date</label>
+                <input type="date" value={formPurchaseDate} onChange={(e) => setFormPurchaseDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
+              </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-              <input value={formCategory} onChange={(e) => setFormCategory(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Laptop" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Warranty Until</label>
+              <input type="date" value={formWarrantyUntil} onChange={(e) => setFormWarrantyUntil(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status *</label>
-              <select value={formStatus} onChange={(e) => setFormStatus(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
-                <option value="AVAILABLE">Available</option>
-                <option value="BROKEN">Broken</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Date</label>
-              <input type="date" value={formPurchaseDate} onChange={(e) => setFormPurchaseDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
+              <textarea value={formNote} onChange={(e) => setFormNote(e.target.value)} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Optional notes..."></textarea>
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button type="button" onClick={() => { setShowAddModal(false); resetForm(); }} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>

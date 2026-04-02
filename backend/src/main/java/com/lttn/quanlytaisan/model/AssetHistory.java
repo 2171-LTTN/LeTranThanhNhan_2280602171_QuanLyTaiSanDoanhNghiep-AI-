@@ -23,7 +23,11 @@ public class AssetHistory {
     @Indexed
     private String assetId;
 
+    private String assetName;
+
     private String userId;
+
+    private String userName;
 
     private String performedBy;
 

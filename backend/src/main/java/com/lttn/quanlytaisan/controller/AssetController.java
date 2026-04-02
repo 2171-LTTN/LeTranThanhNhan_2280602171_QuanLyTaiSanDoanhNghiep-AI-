@@ -59,6 +59,15 @@ public class AssetController {
         return ResponseEntity.ok(ApiResponse.success(assets));
     }
 
+    @GetMapping("/histories")
+    public ResponseEntity<ApiResponse<List<AssetHistoryResponse>>> getAllHistories() {
+        log.debug("GET /api/assets/histories");
+
+        List<AssetHistoryResponse> histories = assetHistoryService.getAllHistories();
+
+        return ResponseEntity.ok(ApiResponse.success(histories));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<AssetResponse>> getAssetById(@PathVariable String id) {
         log.debug("GET /api/assets/{}", id);
@@ -83,6 +92,7 @@ public class AssetController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<AssetResponse>> updateAsset(
             @PathVariable String id,
             @Valid @RequestBody UpdateAssetRequest request
@@ -107,6 +117,7 @@ public class AssetController {
     }
 
     @PostMapping("/{id}/assign")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<AssetResponse>> assignAsset(
             @PathVariable String id,
             @Valid @RequestBody AssignAssetRequest request
@@ -120,6 +131,7 @@ public class AssetController {
     }
 
     @PostMapping("/{id}/return")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<AssetResponse>> returnAsset(@PathVariable String id) {
         log.info("POST /api/assets/{}/return", id);
 

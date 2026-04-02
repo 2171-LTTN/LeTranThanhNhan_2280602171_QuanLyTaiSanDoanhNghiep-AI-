@@ -1,9 +1,9 @@
 # ☁️ DEPLOYMENT CHECKLIST
 
 ## Backend
-- [ ] Configure application.properties
-- [ ] Build JAR
-- [ ] Run server
+- [x] Configure application.properties
+- [x] Build JAR
+- [x] Run server
 
 ---
 
@@ -14,8 +14,8 @@
 ---
 
 ## Database
-- [ ] Setup MongoDB Atlas
-- [ ] Secure connection
+- [x] Setup MongoDB Atlas
+- [x] Secure connection
 
 ---
 
@@ -31,4 +31,4 @@
 ---
 
 ## Progress
-0%
+30%

@@ -21,8 +21,11 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,7 +40,7 @@ public class AssetService {
     public AssetResponse createAsset(CreateAssetRequest request, String performedBy) {
         log.info("Creating asset: '{}' by user: {}", request.getName(), performedBy);
 
-        if (assetRepository.findBySerialNumber(request.getSerialNumber()).isPresent()) {
+        if (assetRepository.existsBySerialNumber(request.getSerialNumber())) {
             log.warn("Asset creation failed - serial number already exists: {}", request.getSerialNumber());
             throw new BusinessException("Serial number already exists: " + request.getSerialNumber());
         }
@@ -46,12 +49,12 @@ public class AssetService {
                 .name(request.getName().trim())
                 .category(request.getCategory().trim())
                 .status(AssetStatus.AVAILABLE)
-                .purchaseDate(parseDate(request.getPurchaseDate()))
+                .purchaseDate(parseDateOrThrow(request.getPurchaseDate()))
                 .purchasePrice(request.getPurchasePrice())
                 .serialNumber(request.getSerialNumber())
                 .brand(request.getBrand())
                 .model(request.getModel())
-                .warrantyUntil(parseDate(request.getWarrantyUntil()))
+                .warrantyUntil(parseDateOrThrow(request.getWarrantyUntil()))
                 .location(request.getLocation())
                 .note(request.getNote())
                 .createdAt(LocalDateTime.now())
@@ -147,7 +150,7 @@ public class AssetService {
         log.info("Assigning asset: {} to user: {} by: {}", assetId, request.getUserId(), performedBy);
 
         Asset asset = findAssetByIdOrThrow(assetId);
-        validateAssetAvailable(asset);
+        validateAssetForAssignment(asset);
 
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> {
@@ -180,7 +183,7 @@ public class AssetService {
         log.info("Returning asset: {} by user: {}", assetId, performedBy);
 
         Asset asset = findAssetByIdOrThrow(assetId);
-        validateAssetAssigned(asset);
+        validateAssetForReturn(asset);
 
         String previousUserId = asset.getAssignedTo();
         User previousUser = userRepository.findById(previousUserId).orElse(null);
@@ -229,14 +232,14 @@ public class AssetService {
                 });
     }
 
-    private void validateAssetAvailable(Asset asset) {
-        if (asset.getStatus() == AssetStatus.IN_USE) {
-            log.warn("Asset already in use: {}", asset.getId());
-            throw new BusinessException("Asset is already in use");
+    private void validateAssetForAssignment(Asset asset) {
+        if (asset.getStatus() != AssetStatus.AVAILABLE) {
+            log.warn("Asset cannot be assigned - current status: {}", asset.getStatus());
+            throw new BusinessException("Asset is not available for assignment. Current status: " + asset.getStatus());
         }
     }
 
-    private void validateAssetAssigned(Asset asset) {
+    private void validateAssetForReturn(Asset asset) {
         if (asset.getStatus() != AssetStatus.IN_USE || asset.getAssignedTo() == null) {
             log.warn("Asset is not currently assigned: {}", asset.getId());
             throw new BusinessException("Asset is not currently assigned");
@@ -250,17 +253,32 @@ public class AssetService {
         if (request.getCategory() != null && !request.getCategory().isBlank()) {
             asset.setCategory(request.getCategory().trim());
         }
+        if (request.getSerialNumber() != null && !request.getSerialNumber().isBlank()) {
+            asset.setSerialNumber(request.getSerialNumber());
+        }
+        if (request.getBrand() != null) {
+            asset.setBrand(request.getBrand());
+        }
+        if (request.getModel() != null) {
+            asset.setModel(request.getModel());
+        }
+        if (request.getLocation() != null) {
+            asset.setLocation(request.getLocation());
+        }
+        if (request.getNote() != null) {
+            asset.setNote(request.getNote());
+        }
     }
 
-    private LocalDate parseDate(String dateStr) {
+    private LocalDate parseDateOrThrow(String dateStr) {
         if (dateStr == null || dateStr.isBlank()) {
-            return LocalDate.now();
+            return null;
         }
         try {
             return LocalDate.parse(dateStr);
-        } catch (Exception e) {
-            log.warn("Invalid date format: {}, using current date", dateStr);
-            return LocalDate.now();
+        } catch (DateTimeParseException e) {
+            log.warn("Invalid date format: {}", dateStr);
+            throw new BusinessException("Invalid date format: " + dateStr + ". Expected format: yyyy-MM-dd");
         }
     }
 

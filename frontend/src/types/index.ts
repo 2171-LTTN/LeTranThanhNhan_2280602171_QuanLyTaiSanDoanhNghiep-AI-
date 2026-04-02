@@ -7,15 +7,21 @@ export interface RegisterRequest {
   name: string;
   email: string;
   password: string;
-  role: string;
 }
 
 export interface AuthResponse {
   token: string;
+  tokenType: string;
+  user: UserInfo;
+}
+
+export interface UserInfo {
   id: string;
   name: string;
   email: string;
   role: string;
+  department?: string;
+  position?: string;
 }
 
 export interface User {
@@ -23,6 +29,9 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  department?: string;
+  position?: string;
+  phone?: string;
 }
 
 export interface Asset {
@@ -33,20 +42,39 @@ export interface Asset {
   assignedTo: string | null;
   assignedToName: string | null;
   purchaseDate: string | null;
+  purchasePrice: number | null;
+  serialNumber: string | null;
+  brand: string | null;
+  model: string | null;
+  warrantyUntil: string | null;
+  location: string | null;
+  note: string | null;
 }
 
 export interface CreateAssetRequest {
   name: string;
   category: string;
-  status: string;
   purchaseDate?: string;
+  purchasePrice?: number;
+  serialNumber: string;
+  brand: string;
+  model: string;
+  warrantyUntil?: string;
+  location: string;
+  note?: string;
 }
 
 export interface UpdateAssetRequest {
   name?: string;
   category?: string;
-  status?: string;
   purchaseDate?: string;
+  purchasePrice?: number;
+  serialNumber?: string;
+  brand?: string;
+  model?: string;
+  warrantyUntil?: string;
+  location?: string;
+  note?: string;
 }
 
 export interface CreateUserRequest {
@@ -66,7 +94,9 @@ export interface AssetHistory {
   assetName: string;
   userId: string;
   userName: string;
-  action: 'ASSIGNED' | 'RETURNED' | 'REPAIRED';
+  performedBy: string;
+  action: 'CREATED' | 'ASSIGNED' | 'RETURNED' | 'UPDATED' | 'DELETED';
+  details: string;
   timestamp: string;
 }
 
