@@ -110,6 +110,56 @@ ONLY mark [x] if ALL are true
 
 ---
 
+## 🚨 HARD RULE (ABSOLUTE - NO EXCEPTIONS)
+
+**If ANY of these steps are skipped:**
+- ❌ Testing
+- ❌ Code review
+- ❌ Checklist update
+- ❌ State update
+- ❌ Activity logging
+- ❌ Git commit
+
+**THEN IMMEDIATE ACTION:**
+```
+STOP immediately
+↓
+REVERT all changes (git reset)
+↓
+REDO the entire task from [Step 1]
+↓
+DO NOT proceed until rule is met
+```
+
+**Examples of Hard Rule Violations:**
+
+❌ Violation 1: Code compiles → Skip testing → Commit
+Result: REVERT + REDO
+
+❌ Violation 2: Task done → Forget checklist → Continue to next task
+Result: REVERT + REDO
+
+❌ Violation 3: Code review found issues → Still commit
+Result: REVERT + REDO
+
+**CONSEQUENCE:** 
+> Violating hard rules = Task counts as FAILED
+> Failed task must be restarted completely
+
+**AI INSTRUCTION:**
+Before committing:
+- [ ] All 10 workflow steps completed?
+- [ ] Definition of Done checklist ALL checked?
+- [ ] Tests 100% passing?
+- [ ] Code review approved?
+- [ ] Checklists updated?
+- [ ] State updated?
+- [ ] Activity logged?
+
+**If ANY unchecked → DO NOT COMMIT**
+
+---
+
 ## Quick Reference
 
 | Step | File | Action |

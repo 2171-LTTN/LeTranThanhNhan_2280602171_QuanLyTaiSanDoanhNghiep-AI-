@@ -66,7 +66,85 @@ Collection: asset_histories
 
 ---
 
+## Subtasks (MANDATORY - DO IN ORDER)
+
+**Follow these steps exactly. Do NOT skip or reorder:**
+
+1. ✅ **Create Asset Entity/Model**
+   - Fields: id, name, category, status (enum), purchaseDate, assignedTo, createdAt, updatedAt
+   - Add status enum: AVAILABLE, IN_USE, BROKEN
+   - Add validation annotations
+
+2. ✅ **Create AssetHistory Entity/Model**
+   - Fields: id, assetId, userId, action (enum), timestamp
+   - Actions: CREATED, ASSIGNED, RETURNED, UPDATED, DELETED
+
+3. ✅ **Create AssetRepository**
+   - Extend MongoRepository<Asset>
+   - Add method: findByStatus(status)
+   - Add method: findByAssignedTo(userId)
+   - Add pagination support
+
+4. ✅ **Create AssetHistoryRepository**
+   - Extend MongoRepository<AssetHistory>
+   - Add method: findByAssetId(assetId)
+   - With sorting by timestamp desc
+
+5. ✅ **Create DTOs**
+   - CreateAssetRequest (name, category, purchaseDate)
+   - UpdateAssetRequest (name, category)
+   - AssetResponse (id, name, category, status, assignedTo, purchaseDate)
+   - AssignAssetRequest (userId)
+   - AssignAssetResponse (message, asset)
+
+6. ✅ **Create AssetService - CRUD Operations**
+   - createAsset(CreateAssetRequest) → save + log history
+   - getAllAssets() → return paginated list
+   - getAssetById(id) → return + check exists
+   - updateAsset(id, UpdateAssetRequest) → update + log history
+   - deleteAsset(id) → delete + log history
+
+7. ✅ **Create AssetService - Assignment Operations**
+   - assignAsset(assetId, userId) → check if available → assign → update status to IN_USE → log
+   - returnAsset(assetId) → check if assigned → clear assignedTo → update status to AVAILABLE → log
+   - Validation: Cannot assign if already assigned, etc.
+
+8. ✅ **Create AssetHistoryService**
+   - saveHistory(assetId, userId, action)
+   - getAssetHistory(assetId) → return all history for asset
+
+9. ✅ **Create AssetController**
+   - GET /api/assets → getAllAssets()
+   - GET /api/assets/{id} → getAssetById()
+   - POST /api/assets → createAsset() [ADMIN only]
+   - PUT /api/assets/{id} → updateAsset()
+   - DELETE /api/assets/{id} → deleteAsset() [ADMIN only]
+   - POST /api/assets/{id}/assign → assignAsset()
+   - POST /api/assets/{id}/return → returnAsset()
+
+10. ✅ **Add Security + Validation**
+    - Protect all endpoints with @Secured/@PreAuthorize
+    - Add input validation
+    - Add error handling (404, 400, 403)
+    - Check JWT authentication for all endpoints
+
+11. ✅ **Write Unit Tests**
+    - Test CRUD: create, read, update, delete
+    - Test Assignment: assign available → OK, assign already assigned → Error
+    - Test Return: return assigned → OK, return not assigned → Error
+    - Test History: assignment creates history entry
+
+12. ✅ **Test All APIs (Postman/curl)**
+    - Test all 7 endpoints
+    - Test with valid data → success
+    - Test with invalid data → error
+    - Test authentication → no token → 401
+    - Test authorization → non-admin delete → 403
+
+---
+
 ## Output
+
 You MUST generate:
 - Asset model
 - AssetRepository

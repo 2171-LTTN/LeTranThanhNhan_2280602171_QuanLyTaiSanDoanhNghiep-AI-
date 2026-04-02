@@ -51,6 +51,95 @@ Build a complete UI for managing assets.
 
 ---
 
+## Subtasks (MANDATORY - DO IN ORDER)
+
+**Follow these steps exactly. Do NOT skip or reorder:**
+
+1. ✅ **Create Main AssetManagement Component**
+   - Create Assets.js component
+   - Setup routing: /assets page
+   - Add authentication check (redirect if not logged in)
+   - Initialize state: assetList, loading, error
+
+2. ✅ **Create Asset List/Table Component**
+   - Display all assets in table
+   - Columns: ID, Name, Category, Status, Assigned User, Actions
+   - Fetch data on mount using GET /api/assets
+   - Handle loading + error states
+   - Add empty state if no assets
+
+3. ✅ **Create Add Asset Form Component**
+   - Modal or separate page
+   - Form fields: Name, Category, Purchase Date
+   - Submit button → POST /api/assets
+   - Validation: required fields
+   - Success → refresh table
+   - Error → show error message
+
+4. ✅ **Create Edit Asset Form Component**
+   - Modal or inline edit
+   - Pre-fill form with existing data
+   - Fields: Name, Category
+   - Submit button → PUT /api/assets/{id}
+   - Validation: required fields
+   - Success → refresh table
+   - Error → show error message
+
+5. ✅ **Create Delete Confirmation Dialog**
+   - Modal with confirmation
+   - Show: "Are you sure?"
+   - Cancel button
+   - Delete button → DELETE /api/assets/{id}
+   - Success → remove from table
+   - Error → show error message
+
+6. ✅ **Create Action Buttons**
+   - Edit button → Open edit form
+   - Delete button → Show confirmation
+   - In each table row
+
+7. ✅ **Setup API Service Layer**
+   - getAllAssets() → GET /api/assets
+   - createAsset(data) → POST /api/assets
+   - updateAsset(id, data) → PUT /api/assets/{id}
+   - deleteAsset(id) → DELETE /api/assets/{id}
+   - All with error handling
+
+8. ✅ **Add Form Validation**
+   - Name: required, min length 3
+   - Category: required, select from dropdown
+   - Purchase Date: valid date format
+   - Show validation errors
+
+9. ✅ **Add Loading/Error States**
+   - Loading spinner while fetching
+   - Error message display
+   - Retry button on error
+   - Disable buttons during loading
+
+10. ✅ **Styling + Layout**
+    - Use TailwindCSS
+    - Responsive table design
+    - Modal popup style
+    - Form styling
+    - Button styling
+    - Mobile friendly
+
+11. ✅ **Test All CRUD Operations**
+    - Create new asset → ✓ appears in table
+    - Edit asset → ✓ data updates
+    - Delete asset → ✓ removed from table
+    - Refresh page → ✓ data persists
+    - Error cases → ✓ error displayed
+
+12. ✅ **Integrate with Real Backend**
+    - Connect to real API endpoints
+    - Add JWT token to headers
+    - Test with real data
+    - Verify all operations working
+
+---
+
 ## Definition of Done (MANDATORY)
 
 ✅ UI/UX Quality:

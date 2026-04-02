@@ -53,6 +53,83 @@ Display:
 
 ---
 
+## Subtasks (MANDATORY - DO IN ORDER)
+
+**Follow these steps exactly. Do NOT skip or reorder:**
+
+1. ✅ **Setup React Page Component**
+   - Create Dashboard.js component
+   - Setup routing (Route in App.js or Router)
+   - Add authentication check (redirect if not logged in)
+
+2. ✅ **Create Statistics Cards Component**
+   - Component 1: Total Assets card
+   - Component 2: Assets in Use card
+   - Component 3: Available Assets card
+   - Component 4: Broken Assets card
+   - Each card shows: Icon + Number + Label
+
+3. ✅ **Create API Service Layer**
+   - getAssets() → call GET /api/assets
+   - Handle error responses
+   - Return formatted data
+
+4. ✅ **Fetch Data on Component Mount**
+   - useEffect hook on Dashboard mount
+   - Call getAssets()
+   - Update state with statistics
+   - Handle loading state
+   - Handle error state
+
+5. ✅ **Calculate Statistics**
+   - totalAssets = all assets count
+   - assetsInUse = count where status === 'IN_USE'
+   - availableAssets = count where status === 'AVAILABLE'
+   - brokenAssets = count where status === 'BROKEN'
+
+6. ✅ **Create Recent Activity Component**
+   - Display list of recent asset actions
+   - Show: Asset name, Action type, Timestamp
+   - Fetch from API or generate from data
+   - Show empty state if no activity
+
+7. ✅ **Add Chart Component (Optional)**
+   - Use library (Chart.js, React Chart.js)
+   - Pie chart: Asset status distribution
+   - Or Bar chart: Assets by category
+
+8. ✅ **Styling + Layout**
+   - Use TailwindCSS classes
+   - Responsive grid layout
+   - Cards aligned properly
+   - Colors match design-system
+   - Mobile friendly
+
+9. ✅ **Add Loading States**
+   - Show spinner while fetching
+   - Show loading text in cards
+   - Display skeleton if needed
+
+10. ✅ **Add Error Handling**
+    - Display error message if API fails
+    - Show retry button
+    - Log errors to console
+
+11. ✅ **Test Component Locally**
+    - Navigate to /dashboard
+    - Verify data loads
+    - Check responsive design
+    - Test on mobile screen
+    - Verify all statistics correct
+
+12. ✅ **Integrate with Backend**
+    - Point API calls to real backend
+    - Get JWT token from localStorage
+    - Add Authorization header
+    - Test with real API data
+
+---
+
 ## Definition of Done (MANDATORY)
 
 ✅ UI/UX Quality:

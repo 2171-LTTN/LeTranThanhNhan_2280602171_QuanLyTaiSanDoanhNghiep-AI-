@@ -60,7 +60,72 @@ Collection: users
 
 ---
 
+## Subtasks (MANDATORY - DO IN ORDER)
+
+**Follow these steps exactly. Do NOT skip or reorder:**
+
+1. ✅ **Create User Entity/Model**
+   - Fields: id, name, email, password (hashed), role, createdAt
+   - Add @Entity, @Document annotations
+   - Add validation annotations
+
+2. ✅ **Create UserRepository**
+   - Extend MongoRepository
+   - Add method: findByEmail(String email)
+   - Add method: existsByEmail(String email)
+
+3. ✅ **Create DTOs**
+   - RegisterRequest (name, email, password)
+   - LoginRequest (email, password)
+   - LoginResponse (token, user info)
+   - UserResponse (id, name, email, role)
+
+4. ✅ **Create JwtUtil/JwtProvider class**
+   - Implement generateToken(username)
+   - Implement validateToken(token)
+   - Implement extractUsername(token)
+   - Implement isTokenExpired(token)
+   - Handle JWT secret + expiration
+
+5. ✅ **Create AuthService**
+   - Implement register(RegisterRequest)
+   - Implement login(LoginRequest)
+   - Use BCrypt for password hashing
+   - Handle email uniqueness check
+   - Return proper errors
+
+6. ✅ **Create AuthController**
+   - POST /api/auth/register → call authService.register()
+   - POST /api/auth/login → call authService.login()
+   - Return consistent response format (success + data/message)
+
+7. ✅ **Create SecurityConfig**
+   - Configure Spring Security
+   - Set /api/auth/** as public
+   - Add JWT filter for protected endpoints
+   - Configure CORS if needed
+
+8. ✅ **Create JwtFilter/JwtAuthenticationFilter**
+   - Intercept requests
+   - Extract token from Authorization header
+   - Validate token
+   - Set SecurityContext
+
+9. ✅ **Write Unit Tests**
+   - Test register: success case + duplicate email
+   - Test login: success case + invalid credentials
+   - Test JWT: generate + validate + extract
+
+10. ✅ **Test All APIs (Postman/curl)**
+    - POST /api/auth/register → should work
+    - POST /api/auth/login → should return token
+    - Test protected endpoint with token → should work
+    - Test protected endpoint without token → should return 401
+
+---
+
 ## Output
+
 You MUST generate:
 - User model (Entity)
 - UserRepository (MongoRepository)
