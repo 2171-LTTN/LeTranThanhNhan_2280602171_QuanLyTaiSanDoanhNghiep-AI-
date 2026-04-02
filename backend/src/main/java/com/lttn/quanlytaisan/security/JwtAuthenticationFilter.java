@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,10 +19,14 @@ import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
+
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
 
     @Override
     protected void doFilterInternal(
@@ -30,37 +35,71 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String userEmail;
+        final String authHeader = request.getHeader(AUTHORIZATION_HEADER);
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (!isValidAuthHeader(authHeader)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = authHeader.substring(7);
+        final String jwt = authHeader.substring(BEARER_PREFIX.length());
 
         try {
-            userEmail = jwtUtil.extractUsername(jwt);
+            if (jwtUtil.validateToken(jwt)) {
+                String userEmail = jwtUtil.extractUsername(jwt);
 
-            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-
-                if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities()
-                    );
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    authenticateUser(request, userEmail);
                 }
+            } else {
+                log.debug("JWT token validation failed for request: {}", request.getRequestURI());
             }
         } catch (Exception e) {
-            logger.error("Cannot set user authentication: " + e.getMessage());
+            log.warn("JWT processing error for request {}: {}", request.getRequestURI(), e.getMessage());
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isValidAuthHeader(String authHeader) {
+        return authHeader != null && authHeader.startsWith(BEARER_PREFIX);
+    }
+
+    private void authenticateUser(HttpServletRequest request, String userEmail) {
+        try {
+            UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+
+            if (jwtUtil.validateToken(
+                    extractToken(request.getHeader(AUTHORIZATION_HEADER)),
+                    userDetails.getUsername())) {
+
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                );
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+
+                log.debug("Successfully authenticated user: {}", maskEmail(userEmail));
+            }
+        } catch (Exception e) {
+            log.warn("Failed to load user details for: {}", maskEmail(userEmail));
+        }
+    }
+
+    private String extractToken(String authHeader) {
+        return authHeader != null ? authHeader.substring(BEARER_PREFIX.length()) : null;
+    }
+
+    private String maskEmail(String email) {
+        if (email == null || !email.contains("@")) {
+            return "***";
+        }
+        int atIndex = email.indexOf("@");
+        if (atIndex <= 1) {
+            return "***" + email.substring(atIndex);
+        }
+        return email.substring(0, 2) + "***" + email.substring(atIndex);
     }
 }

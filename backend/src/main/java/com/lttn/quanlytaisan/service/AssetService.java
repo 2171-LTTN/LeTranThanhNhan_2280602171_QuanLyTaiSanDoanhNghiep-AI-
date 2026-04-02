@@ -4,7 +4,9 @@ import com.lttn.quanlytaisan.dto.request.AssignAssetRequest;
 import com.lttn.quanlytaisan.dto.request.CreateAssetRequest;
 import com.lttn.quanlytaisan.dto.request.UpdateAssetRequest;
 import com.lttn.quanlytaisan.dto.response.AssetResponse;
+import com.lttn.quanlytaisan.exception.BusinessException;
 import com.lttn.quanlytaisan.exception.ResourceNotFoundException;
+import com.lttn.quanlytaisan.mapper.AssetMapper;
 import com.lttn.quanlytaisan.model.Asset;
 import com.lttn.quanlytaisan.model.AssetAction;
 import com.lttn.quanlytaisan.model.AssetStatus;
@@ -12,6 +14,7 @@ import com.lttn.quanlytaisan.model.User;
 import com.lttn.quanlytaisan.repository.AssetRepository;
 import com.lttn.quanlytaisan.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,16 +26,20 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AssetService {
 
     private final AssetRepository assetRepository;
     private final UserRepository userRepository;
     private final AssetHistoryService assetHistoryService;
+    private final AssetMapper assetMapper;
 
     public AssetResponse createAsset(CreateAssetRequest request, String performedBy) {
+        log.info("Creating asset: '{}' by user: {}", request.getName(), performedBy);
+
         Asset asset = Asset.builder()
-                .name(request.getName())
-                .category(request.getCategory())
+                .name(request.getName().trim())
+                .category(request.getCategory().trim())
                 .status(AssetStatus.AVAILABLE)
                 .purchaseDate(parseDate(request.getPurchaseDate()))
                 .createdAt(LocalDateTime.now())
@@ -47,46 +54,48 @@ public class AssetService {
                 null,
                 performedBy,
                 AssetAction.CREATED,
-                "Asset created: " + saved.getName()
+                buildCreationDetails(saved)
         );
 
-        return mapToResponse(saved);
+        log.info("Asset created successfully: {} (ID: {})", saved.getName(), saved.getId());
+
+        return assetMapper.toResponse(saved);
     }
 
     public Page<AssetResponse> getAllAssets(Pageable pageable) {
-        return assetRepository.findAll(pageable).map(this::mapToResponse);
+        log.debug("Fetching all assets, page: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
+        return assetRepository.findAll(pageable).map(assetMapper::toResponse);
     }
 
     public Page<AssetResponse> getAssetsByStatus(AssetStatus status, Pageable pageable) {
-        return assetRepository.findByStatus(status, pageable).map(this::mapToResponse);
+        log.debug("Fetching assets by status: {}, page: {}", status, pageable.getPageNumber());
+        return assetRepository.findByStatus(status, pageable).map(assetMapper::toResponse);
     }
 
     public Page<AssetResponse> getAssetsByUser(String userId, Pageable pageable) {
-        return assetRepository.findByAssignedTo(userId, pageable).map(this::mapToResponse);
+        log.debug("Fetching assets for user: {}, page: {}", userId, pageable.getPageNumber());
+        return assetRepository.findByAssignedTo(userId, pageable).map(assetMapper::toResponse);
     }
 
     public AssetResponse getAssetById(String id) {
-        Asset asset = findAssetById(id);
-        return mapToResponse(asset);
+        log.debug("Fetching asset by ID: {}", id);
+        Asset asset = findAssetByIdOrThrow(id);
+        return assetMapper.toResponse(asset);
     }
 
     public AssetResponse updateAsset(String id, UpdateAssetRequest request, String performedBy) {
-        Asset asset = findAssetById(id);
+        log.info("Updating asset: {} by user: {}", id, performedBy);
+
+        Asset asset = findAssetByIdOrThrow(id);
         String oldName = asset.getName();
         String oldCategory = asset.getCategory();
 
-        if (request.getName() != null && !request.getName().isBlank()) {
-            asset.setName(request.getName());
-        }
-        if (request.getCategory() != null && !request.getCategory().isBlank()) {
-            asset.setCategory(request.getCategory());
-        }
+        applyUpdates(asset, request);
         asset.setUpdatedAt(LocalDateTime.now());
 
         Asset saved = assetRepository.save(asset);
 
         String details = buildUpdateDetails(oldName, oldCategory, request);
-
         assetHistoryService.saveHistory(
                 saved.getId(),
                 saved.getName(),
@@ -97,11 +106,15 @@ public class AssetService {
                 details
         );
 
-        return mapToResponse(saved);
+        log.info("Asset updated successfully: {} (ID: {})", saved.getName(), saved.getId());
+
+        return assetMapper.toResponse(saved);
     }
 
     public void deleteAsset(String id, String performedBy) {
-        Asset asset = findAssetById(id);
+        log.info("Deleting asset: {} by user: {}", id, performedBy);
+
+        Asset asset = findAssetByIdOrThrow(id);
 
         assetHistoryService.saveHistory(
                 asset.getId(),
@@ -110,21 +123,25 @@ public class AssetService {
                 null,
                 performedBy,
                 AssetAction.DELETED,
-                "Asset deleted: " + asset.getName()
+                buildDeletionDetails(asset)
         );
 
         assetRepository.delete(asset);
+
+        log.info("Asset deleted successfully: {} (ID: {})", asset.getName(), asset.getId());
     }
 
     public AssetResponse assignAsset(String assetId, AssignAssetRequest request, String performedBy) {
-        Asset asset = findAssetById(assetId);
+        log.info("Assigning asset: {} to user: {} by: {}", assetId, request.getUserId(), performedBy);
 
-        if (asset.getStatus() == AssetStatus.IN_USE) {
-            throw new IllegalStateException("Asset is already in use");
-        }
+        Asset asset = findAssetByIdOrThrow(assetId);
+        validateAssetAvailable(asset);
 
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.getUserId()));
+                .orElseThrow(() -> {
+                    log.warn("Assignment failed - user not found: {}", request.getUserId());
+                    return new ResourceNotFoundException("User not found: " + request.getUserId());
+                });
 
         asset.setAssignedTo(user.getId());
         asset.setStatus(AssetStatus.IN_USE);
@@ -139,25 +156,22 @@ public class AssetService {
                 user.getName(),
                 performedBy,
                 AssetAction.ASSIGNED,
-                "Asset assigned to " + user.getName()
+                buildAssignmentDetails(user)
         );
 
-        return mapToResponse(saved);
+        log.info("Asset assigned successfully: {} to {} (ID: {})", saved.getName(), user.getName(), saved.getId());
+
+        return assetMapper.toResponse(saved);
     }
 
     public AssetResponse returnAsset(String assetId, String performedBy) {
-        Asset asset = findAssetById(assetId);
+        log.info("Returning asset: {} by user: {}", assetId, performedBy);
 
-        if (asset.getStatus() != AssetStatus.IN_USE || asset.getAssignedTo() == null) {
-            throw new IllegalStateException("Asset is not currently assigned");
-        }
+        Asset asset = findAssetByIdOrThrow(assetId);
+        validateAssetAssigned(asset);
 
         String previousUserId = asset.getAssignedTo();
-        User previousUser = null;
-        if (previousUserId != null) {
-            previousUser = userRepository.findById(previousUserId).orElse(null);
-        }
-
+        User previousUser = userRepository.findById(previousUserId).orElse(null);
         String userName = previousUser != null ? previousUser.getName() : "Unknown";
 
         asset.setAssignedTo(null);
@@ -173,27 +187,57 @@ public class AssetService {
                 userName,
                 performedBy,
                 AssetAction.RETURNED,
-                "Asset returned by " + userName
+                buildReturnDetails(userName)
         );
 
-        return mapToResponse(saved);
+        log.info("Asset returned successfully: {} (ID: {})", saved.getName(), saved.getId());
+
+        return assetMapper.toResponse(saved);
     }
 
     public Map<String, Long> getAssetStats() {
+        log.debug("Fetching asset statistics");
+
         Map<String, Long> stats = new HashMap<>();
         stats.put("total", assetRepository.count());
-        stats.put("available", assetRepository.findByStatus(AssetStatus.AVAILABLE,
-            Pageable.unpaged()).getTotalElements());
-        stats.put("inUse", assetRepository.findByStatus(AssetStatus.IN_USE,
-            Pageable.unpaged()).getTotalElements());
-        stats.put("broken", assetRepository.findByStatus(AssetStatus.BROKEN,
-            Pageable.unpaged()).getTotalElements());
+        stats.put("available", assetRepository.findByStatus(AssetStatus.AVAILABLE, Pageable.unpaged()).getTotalElements());
+        stats.put("inUse", assetRepository.findByStatus(AssetStatus.IN_USE, Pageable.unpaged()).getTotalElements());
+        stats.put("broken", assetRepository.findByStatus(AssetStatus.BROKEN, Pageable.unpaged()).getTotalElements());
+
+        log.debug("Asset statistics: {}", stats);
+
         return stats;
     }
 
-    private Asset findAssetById(String id) {
+    private Asset findAssetByIdOrThrow(String id) {
         return assetRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Asset not found: " + id));
+                .orElseThrow(() -> {
+                    log.warn("Asset not found: {}", id);
+                    return new ResourceNotFoundException("Asset not found: " + id);
+                });
+    }
+
+    private void validateAssetAvailable(Asset asset) {
+        if (asset.getStatus() == AssetStatus.IN_USE) {
+            log.warn("Asset already in use: {}", asset.getId());
+            throw new BusinessException("Asset is already in use");
+        }
+    }
+
+    private void validateAssetAssigned(Asset asset) {
+        if (asset.getStatus() != AssetStatus.IN_USE || asset.getAssignedTo() == null) {
+            log.warn("Asset is not currently assigned: {}", asset.getId());
+            throw new BusinessException("Asset is not currently assigned");
+        }
+    }
+
+    private void applyUpdates(Asset asset, UpdateAssetRequest request) {
+        if (request.getName() != null && !request.getName().isBlank()) {
+            asset.setName(request.getName().trim());
+        }
+        if (request.getCategory() != null && !request.getCategory().isBlank()) {
+            asset.setCategory(request.getCategory().trim());
+        }
     }
 
     private LocalDate parseDate(String dateStr) {
@@ -203,39 +247,35 @@ public class AssetService {
         try {
             return LocalDate.parse(dateStr);
         } catch (Exception e) {
+            log.warn("Invalid date format: {}, using current date", dateStr);
             return LocalDate.now();
         }
     }
 
-    private String buildUpdateDetails(String oldName, String oldCategory, UpdateAssetRequest request) {
-        StringBuilder sb = new StringBuilder();
-        if (request.getName() != null && !request.getName().equals(oldName)) {
-            sb.append("Name: ").append(oldName).append(" -> ").append(request.getName()).append("; ");
-        }
-        if (request.getCategory() != null && !request.getCategory().equals(oldCategory)) {
-            sb.append("Category: ").append(oldCategory).append(" -> ").append(request.getCategory());
-        }
-        return sb.length() > 0 ? sb.toString() : "No changes";
+    private String buildCreationDetails(Asset asset) {
+        return String.format("Asset '%s' (Category: %s) created", asset.getName(), asset.getCategory());
     }
 
-    private AssetResponse mapToResponse(Asset asset) {
-        String assignedToName = null;
-        if (asset.getAssignedTo() != null) {
-            assignedToName = userRepository.findById(asset.getAssignedTo())
-                    .map(User::getName)
-                    .orElse(null);
-        }
+    private String buildDeletionDetails(Asset asset) {
+        return String.format("Asset '%s' deleted", asset.getName());
+    }
 
-        return AssetResponse.builder()
-                .id(asset.getId())
-                .name(asset.getName())
-                .category(asset.getCategory())
-                .status(asset.getStatus())
-                .assignedTo(asset.getAssignedTo())
-                .assignedToName(assignedToName)
-                .purchaseDate(asset.getPurchaseDate())
-                .createdAt(asset.getCreatedAt())
-                .updatedAt(asset.getUpdatedAt())
-                .build();
+    private String buildAssignmentDetails(User user) {
+        return String.format("Asset assigned to %s", user.getName());
+    }
+
+    private String buildReturnDetails(String userName) {
+        return String.format("Asset returned by %s", userName);
+    }
+
+    private String buildUpdateDetails(String oldName, String oldCategory, UpdateAssetRequest request) {
+        StringBuilder sb = new StringBuilder();
+        if (request.getName() != null && !request.getName().isBlank() && !request.getName().equals(oldName)) {
+            sb.append("Name: ").append(oldName).append(" -> ").append(request.getName()).append("; ");
+        }
+        if (request.getCategory() != null && !request.getCategory().isBlank() && !request.getCategory().equals(oldCategory)) {
+            sb.append("Category: ").append(oldCategory).append(" -> ").append(request.getCategory());
+        }
+        return sb.length() > 0 ? sb.toString().trim() : "No changes made";
     }
 }

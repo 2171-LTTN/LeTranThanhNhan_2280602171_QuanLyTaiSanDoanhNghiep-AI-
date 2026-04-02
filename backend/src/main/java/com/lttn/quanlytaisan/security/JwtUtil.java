@@ -8,6 +8,8 @@ import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +20,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Component
+@Slf4j
 public class JwtUtil {
 
     @Value("${jwt.secret}")
@@ -25,6 +28,18 @@ public class JwtUtil {
 
     @Value("${jwt.expiration}")
     private Long expiration;
+
+    private SecretKey signingKey;
+
+    @PostConstruct
+    public void init() {
+        log.info("Initializing JWT signing key");
+        byte[] keyBytes = Decoders.BASE64.decode(
+                java.util.Base64.getEncoder().encodeToString(secret.getBytes())
+        );
+        this.signingKey = Keys.hmacShaKeyFor(keyBytes);
+        log.info("JWT signing key initialized successfully");
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -41,17 +56,10 @@ public class JwtUtil {
 
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
-                .verifyWith(getSigningKey())
+                .verifyWith(signingKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-    }
-
-    private SecretKey getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(
-            java.util.Base64.getEncoder().encodeToString(secret.getBytes())
-        );
-        return Keys.hmacShaKeyFor(keyBytes);
     }
 
     private Boolean isTokenExpired(String token) {
@@ -75,7 +83,7 @@ public class JwtUtil {
                 .subject(subject)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getSigningKey())
+                .signWith(signingKey)
                 .compact();
     }
 
@@ -88,14 +96,22 @@ public class JwtUtil {
         try {
             extractAllClaims(token);
             return !isTokenExpired(token);
-        } catch (SignatureException | MalformedJwtException | ExpiredJwtException |
-                 UnsupportedJwtException | IllegalArgumentException e) {
-            return false;
+        } catch (SignatureException e) {
+            log.warn("Invalid JWT signature: {}", e.getMessage());
+        } catch (MalformedJwtException e) {
+            log.warn("Invalid JWT token: {}", e.getMessage());
+        } catch (ExpiredJwtException e) {
+            log.warn("JWT token is expired: {}", e.getMessage());
+        } catch (UnsupportedJwtException e) {
+            log.warn("JWT token is unsupported: {}", e.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.warn("JWT claims string is empty: {}", e.getMessage());
         }
+        return false;
     }
 
     public String extractRole(String token) {
         Claims claims = extractAllClaims(token);
-        return (String) claims.get("role");
+        return claims.get("role", String.class);
     }
 }

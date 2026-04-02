@@ -4,13 +4,17 @@ import com.lttn.quanlytaisan.dto.request.AssignAssetRequest;
 import com.lttn.quanlytaisan.dto.request.CreateAssetRequest;
 import com.lttn.quanlytaisan.dto.request.UpdateAssetRequest;
 import com.lttn.quanlytaisan.dto.response.AssetResponse;
+import com.lttn.quanlytaisan.exception.BusinessException;
 import com.lttn.quanlytaisan.exception.ResourceNotFoundException;
+import com.lttn.quanlytaisan.mapper.AssetMapper;
 import com.lttn.quanlytaisan.model.Asset;
 import com.lttn.quanlytaisan.model.AssetStatus;
 import com.lttn.quanlytaisan.model.User;
 import com.lttn.quanlytaisan.repository.AssetRepository;
 import com.lttn.quanlytaisan.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,11 +29,13 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("AssetService Tests")
 class AssetServiceTest {
 
     @Mock
@@ -41,12 +47,15 @@ class AssetServiceTest {
     @Mock
     private AssetHistoryService assetHistoryService;
 
+    @Mock
+    private AssetMapper assetMapper;
+
     @InjectMocks
     private AssetService assetService;
 
     private Asset testAsset;
     private User testUser;
-    private CreateAssetRequest createRequest;
+    private AssetResponse assetResponse;
 
     @BeforeEach
     void setUp() {
@@ -65,172 +74,207 @@ class AssetServiceTest {
                 .role("USER")
                 .build();
 
-        createRequest = CreateAssetRequest.builder()
+        assetResponse = AssetResponse.builder()
+                .id("asset-123")
                 .name("MacBook Pro")
                 .category("Electronics")
-                .purchaseDate("2024-01-15")
+                .status(AssetStatus.AVAILABLE)
                 .build();
     }
 
-    @Test
-    void createAsset_Success() {
-        when(assetRepository.save(any(Asset.class))).thenReturn(testAsset);
+    @Nested
+    @DisplayName("Create Asset Tests")
+    class CreateAssetTests {
 
-        AssetResponse response = assetService.createAsset(createRequest, "admin@example.com");
+        @Test
+        @DisplayName("Should create asset successfully")
+        void shouldCreateAssetSuccessfully() {
+            CreateAssetRequest request = CreateAssetRequest.builder()
+                    .name("MacBook Pro")
+                    .category("Electronics")
+                    .purchaseDate("2024-01-15")
+                    .build();
 
-        assertNotNull(response);
-        assertEquals("asset-123", response.getId());
-        assertEquals("MacBook Pro", response.getName());
-        assertEquals("Electronics", response.getCategory());
-        assertEquals(AssetStatus.AVAILABLE, response.getStatus());
+            when(assetRepository.save(any(Asset.class))).thenReturn(testAsset);
+            when(assetMapper.toResponse(testAsset)).thenReturn(assetResponse);
 
-        verify(assetRepository).save(any(Asset.class));
-        verify(assetHistoryService).saveHistory(
-                eq("asset-123"),
-                eq("MacBook Pro"),
-                isNull(),
-                isNull(),
-                eq("admin@example.com"),
-                any(),
-                anyString()
-        );
+            AssetResponse response = assetService.createAsset(request, "admin@example.com");
+
+            assertThat(response).isNotNull();
+            assertThat(response.getName()).isEqualTo("MacBook Pro");
+            assertThat(response.getStatus()).isEqualTo(AssetStatus.AVAILABLE);
+
+            verify(assetRepository).save(any(Asset.class));
+            verify(assetHistoryService).saveHistory(any(), any(), any(), any(), any(), any(), any());
+        }
     }
 
-    @Test
-    void getAllAssets_Success() {
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Asset> page = new PageImpl<>(List.of(testAsset));
-        when(assetRepository.findAll(pageable)).thenReturn(page);
+    @Nested
+    @DisplayName("Get Asset Tests")
+    class GetAssetTests {
 
-        Page<AssetResponse> response = assetService.getAllAssets(pageable);
+        @Test
+        @DisplayName("Should get all assets")
+        void shouldGetAllAssets() {
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<Asset> page = new PageImpl<>(List.of(testAsset));
 
-        assertNotNull(response);
-        assertEquals(1, response.getTotalElements());
-        assertEquals("MacBook Pro", response.getContent().get(0).getName());
+            when(assetRepository.findAll(pageable)).thenReturn(page);
+            when(assetMapper.toResponse(testAsset)).thenReturn(assetResponse);
+
+            Page<AssetResponse> response = assetService.getAllAssets(pageable);
+
+            assertThat(response).isNotNull();
+            assertThat(response.getTotalElements()).isEqualTo(1);
+            assertThat(response.getContent().get(0).getName()).isEqualTo("MacBook Pro");
+        }
+
+        @Test
+        @DisplayName("Should get asset by ID")
+        void shouldGetAssetById() {
+            when(assetRepository.findById("asset-123")).thenReturn(Optional.of(testAsset));
+            when(assetMapper.toResponse(testAsset)).thenReturn(assetResponse);
+
+            AssetResponse response = assetService.getAssetById("asset-123");
+
+            assertThat(response).isNotNull();
+            assertThat(response.getId()).isEqualTo("asset-123");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when asset not found")
+        void shouldThrowExceptionWhenAssetNotFound() {
+            when(assetRepository.findById("nonexistent")).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> assetService.getAssetById("nonexistent"))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Asset not found");
+        }
     }
 
-    @Test
-    void getAssetById_Success() {
-        when(assetRepository.findById("asset-123")).thenReturn(Optional.of(testAsset));
+    @Nested
+    @DisplayName("Update Asset Tests")
+    class UpdateAssetTests {
 
-        AssetResponse response = assetService.getAssetById("asset-123");
+        @Test
+        @DisplayName("Should update asset successfully")
+        void shouldUpdateAssetSuccessfully() {
+            UpdateAssetRequest updateRequest = UpdateAssetRequest.builder()
+                    .name("MacBook Air")
+                    .category("Laptops")
+                    .build();
 
-        assertNotNull(response);
-        assertEquals("asset-123", response.getId());
-        assertEquals("MacBook Pro", response.getName());
+            when(assetRepository.findById("asset-123")).thenReturn(Optional.of(testAsset));
+            when(assetRepository.save(any(Asset.class))).thenReturn(testAsset);
+            when(assetMapper.toResponse(testAsset)).thenReturn(assetResponse);
+
+            AssetResponse response = assetService.updateAsset("asset-123", updateRequest, "admin@example.com");
+
+            assertThat(response).isNotNull();
+            verify(assetRepository).save(any(Asset.class));
+            verify(assetHistoryService).saveHistory(any(), any(), any(), any(), any(), any(), any());
+        }
     }
 
-    @Test
-    void getAssetById_NotFound_ThrowsException() {
-        when(assetRepository.findById("nonexistent")).thenReturn(Optional.empty());
+    @Nested
+    @DisplayName("Delete Asset Tests")
+    class DeleteAssetTests {
 
-        assertThrows(ResourceNotFoundException.class, () -> assetService.getAssetById("nonexistent"));
+        @Test
+        @DisplayName("Should delete asset successfully")
+        void shouldDeleteAssetSuccessfully() {
+            when(assetRepository.findById("asset-123")).thenReturn(Optional.of(testAsset));
+            doNothing().when(assetRepository).delete(testAsset);
+
+            assetService.deleteAsset("asset-123", "admin@example.com");
+
+            verify(assetRepository).delete(testAsset);
+            verify(assetHistoryService).saveHistory(any(), any(), any(), any(), any(), any(), any());
+        }
     }
 
-    @Test
-    void updateAsset_Success() {
-        UpdateAssetRequest updateRequest = UpdateAssetRequest.builder()
-                .name("MacBook Air")
-                .category("Laptops")
-                .build();
+    @Nested
+    @DisplayName("Assign Asset Tests")
+    class AssignAssetTests {
 
-        when(assetRepository.findById("asset-123")).thenReturn(Optional.of(testAsset));
-        when(assetRepository.save(any(Asset.class))).thenReturn(testAsset);
+        @Test
+        @DisplayName("Should assign available asset successfully")
+        void shouldAssignAvailableAssetSuccessfully() {
+            AssignAssetRequest assignRequest = AssignAssetRequest.builder()
+                    .userId("user-123")
+                    .build();
 
-        AssetResponse response = assetService.updateAsset("asset-123", updateRequest, "admin@example.com");
+            when(assetRepository.findById("asset-123")).thenReturn(Optional.of(testAsset));
+            when(userRepository.findById("user-123")).thenReturn(Optional.of(testUser));
+            when(assetRepository.save(any(Asset.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(assetMapper.toResponse(any(Asset.class))).thenReturn(assetResponse);
 
-        assertNotNull(response);
-        verify(assetRepository).save(any(Asset.class));
+            AssetResponse response = assetService.assignAsset("asset-123", assignRequest, "admin@example.com");
+
+            assertThat(response).isNotNull();
+            verify(assetHistoryService).saveHistory(any(), any(), eq("user-123"), eq("John Doe"), any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("Should throw exception when asset is already in use")
+        void shouldThrowExceptionWhenAssetAlreadyInUse() {
+            testAsset.setStatus(AssetStatus.IN_USE);
+            AssignAssetRequest assignRequest = AssignAssetRequest.builder()
+                    .userId("user-123")
+                    .build();
+
+            when(assetRepository.findById("asset-123")).thenReturn(Optional.of(testAsset));
+
+            assertThatThrownBy(() -> assetService.assignAsset("asset-123", assignRequest, "admin@example.com"))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("already in use");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when user not found")
+        void shouldThrowExceptionWhenUserNotFound() {
+            AssignAssetRequest assignRequest = AssignAssetRequest.builder()
+                    .userId("nonexistent-user")
+                    .build();
+
+            when(assetRepository.findById("asset-123")).thenReturn(Optional.of(testAsset));
+            when(userRepository.findById("nonexistent-user")).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> assetService.assignAsset("asset-123", assignRequest, "admin@example.com"))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("User not found");
+        }
     }
 
-    @Test
-    void deleteAsset_Success() {
-        when(assetRepository.findById("asset-123")).thenReturn(Optional.of(testAsset));
-        doNothing().when(assetRepository).delete(testAsset);
+    @Nested
+    @DisplayName("Return Asset Tests")
+    class ReturnAssetTests {
 
-        assertDoesNotThrow(() -> assetService.deleteAsset("asset-123", "admin@example.com"));
+        @Test
+        @DisplayName("Should return assigned asset successfully")
+        void shouldReturnAssignedAssetSuccessfully() {
+            testAsset.setStatus(AssetStatus.IN_USE);
+            testAsset.setAssignedTo("user-123");
 
-        verify(assetRepository).delete(testAsset);
-        verify(assetHistoryService).saveHistory(
-                eq("asset-123"),
-                eq("MacBook Pro"),
-                isNull(),
-                isNull(),
-                eq("admin@example.com"),
-                any(),
-                anyString()
-        );
-    }
+            when(assetRepository.findById("asset-123")).thenReturn(Optional.of(testAsset));
+            when(userRepository.findById("user-123")).thenReturn(Optional.of(testUser));
+            when(assetRepository.save(any(Asset.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(assetMapper.toResponse(any(Asset.class))).thenReturn(assetResponse);
 
-    @Test
-    void assignAsset_Success() {
-        AssignAssetRequest assignRequest = AssignAssetRequest.builder()
-                .userId("user-123")
-                .build();
+            AssetResponse response = assetService.returnAsset("asset-123", "admin@example.com");
 
-        when(assetRepository.findById("asset-123")).thenReturn(Optional.of(testAsset));
-        when(userRepository.findById("user-123")).thenReturn(Optional.of(testUser));
-        when(assetRepository.save(any(Asset.class))).thenAnswer(invocation -> {
-            Asset saved = invocation.getArgument(0);
-            saved.setId("asset-123");
-            return saved;
-        });
+            assertThat(response).isNotNull();
+            verify(assetHistoryService).saveHistory(any(), any(), eq("user-123"), eq("John Doe"), any(), any(), any());
+        }
 
-        AssetResponse response = assetService.assignAsset("asset-123", assignRequest, "admin@example.com");
+        @Test
+        @DisplayName("Should throw exception when asset is not assigned")
+        void shouldThrowExceptionWhenAssetNotAssigned() {
+            when(assetRepository.findById("asset-123")).thenReturn(Optional.of(testAsset));
 
-        assertNotNull(response);
-        assertEquals(AssetStatus.IN_USE, response.getStatus());
-        verify(assetHistoryService).saveHistory(
-                any(), any(), eq("user-123"), eq("John Doe"), eq("admin@example.com"), any(), anyString()
-        );
-    }
-
-    @Test
-    void assignAsset_AlreadyInUse_ThrowsException() {
-        testAsset.setStatus(AssetStatus.IN_USE);
-        AssignAssetRequest assignRequest = AssignAssetRequest.builder()
-                .userId("user-123")
-                .build();
-
-        when(assetRepository.findById("asset-123")).thenReturn(Optional.of(testAsset));
-
-        assertThrows(IllegalStateException.class,
-                () -> assetService.assignAsset("asset-123", assignRequest, "admin@example.com"));
-    }
-
-    @Test
-    void assignAsset_UserNotFound_ThrowsException() {
-        AssignAssetRequest assignRequest = AssignAssetRequest.builder()
-                .userId("nonexistent-user")
-                .build();
-
-        when(assetRepository.findById("asset-123")).thenReturn(Optional.of(testAsset));
-        when(userRepository.findById("nonexistent-user")).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class,
-                () -> assetService.assignAsset("asset-123", assignRequest, "admin@example.com"));
-    }
-
-    @Test
-    void returnAsset_Success() {
-        testAsset.setStatus(AssetStatus.IN_USE);
-        testAsset.setAssignedTo("user-123");
-
-        when(assetRepository.findById("asset-123")).thenReturn(Optional.of(testAsset));
-        when(userRepository.findById("user-123")).thenReturn(Optional.of(testUser));
-        when(assetRepository.save(any(Asset.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        AssetResponse response = assetService.returnAsset("asset-123", "admin@example.com");
-
-        assertNotNull(response);
-        assertEquals(AssetStatus.AVAILABLE, response.getStatus());
-    }
-
-    @Test
-    void returnAsset_NotAssigned_ThrowsException() {
-        when(assetRepository.findById("asset-123")).thenReturn(Optional.of(testAsset));
-
-        assertThrows(IllegalStateException.class,
-                () -> assetService.returnAsset("asset-123", "admin@example.com"));
+            assertThatThrownBy(() -> assetService.returnAsset("asset-123", "admin@example.com"))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("not currently assigned");
+        }
     }
 }
