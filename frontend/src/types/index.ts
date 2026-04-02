@@ -9,12 +9,6 @@ export interface RegisterRequest {
   password: string;
 }
 
-export interface AuthResponse {
-  token: string;
-  tokenType: string;
-  user: UserInfo;
-}
-
 export interface UserInfo {
   id: string;
   name: string;
@@ -22,6 +16,13 @@ export interface UserInfo {
   role: string;
   department?: string;
   position?: string;
+  phone?: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  tokenType: string;
+  user: UserInfo;
 }
 
 export interface User {
@@ -112,7 +113,7 @@ export interface DashboardStats {
 
 export interface ApiResponse<T> {
   success: boolean;
-  message: string;
+  message?: string;
   data: T;
-  timestamp: string;
+  timestamp?: string;
 }

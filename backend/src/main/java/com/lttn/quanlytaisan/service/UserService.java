@@ -11,6 +11,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -42,5 +45,18 @@ public class UserService {
                     return new ResourceNotFoundException("User not found: " + email);
                 });
         return userMapper.toResponse(user);
+    }
+
+    public Map<String, Long> getUserStats() {
+        log.debug("Fetching user statistics");
+
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", userRepository.count());
+        stats.put("admins", userRepository.countByRole("ADMIN"));
+        stats.put("users", userRepository.countByRole("USER"));
+
+        log.debug("User statistics: {}", stats);
+
+        return stats;
     }
 }
