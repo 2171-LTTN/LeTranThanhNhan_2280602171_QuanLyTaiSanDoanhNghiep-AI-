@@ -227,7 +227,7 @@ class AssetServiceTest {
 
             assertThatThrownBy(() -> assetService.assignAsset("asset-123", assignRequest, "admin@example.com"))
                     .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("already in use");
+                    .hasMessageContaining("not available");
         }
 
         @Test

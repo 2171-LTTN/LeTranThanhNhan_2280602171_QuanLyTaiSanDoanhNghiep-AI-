@@ -5,5 +5,7 @@ public enum AssetAction {
     ASSIGNED,
     RETURNED,
     UPDATED,
-    DELETED
+    DELETED,
+    REPORTED_BROKEN,
+    REPAIRED
 }

@@ -59,6 +59,15 @@ public class AssetHistoryService {
                 .collect(Collectors.toList());
     }
 
+    public List<AssetHistoryResponse> getUserAssetHistory(String userId) {
+        List<AssetHistory> histories = assetHistoryRepository
+                .findByUserId(userId, Sort.by(Sort.Direction.DESC, "timestamp"));
+
+        return histories.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     private AssetHistoryResponse mapToResponse(AssetHistory history) {
         return AssetHistoryResponse.builder()
                 .id(history.getId())

@@ -5,7 +5,6 @@ import com.lttn.quanlytaisan.repository.AssetRepository;
 import com.lttn.quanlytaisan.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -25,9 +24,9 @@ public class DashboardService {
         Map<String, Object> stats = new HashMap<>();
 
         stats.put("totalAssets", assetRepository.count());
-        stats.put("availableAssets", assetRepository.findByStatus(AssetStatus.AVAILABLE, Pageable.unpaged()).getTotalElements());
-        stats.put("inUseAssets", assetRepository.findByStatus(AssetStatus.IN_USE, Pageable.unpaged()).getTotalElements());
-        stats.put("brokenAssets", assetRepository.findByStatus(AssetStatus.BROKEN, Pageable.unpaged()).getTotalElements());
+        stats.put("availableAssets", assetRepository.countByStatus(AssetStatus.AVAILABLE));
+        stats.put("inUseAssets", assetRepository.countByStatus(AssetStatus.IN_USE));
+        stats.put("brokenAssets", assetRepository.countByStatus(AssetStatus.BROKEN));
         stats.put("totalUsers", userRepository.count());
         stats.put("adminUsers", userRepository.countByRole("ADMIN"));
         stats.put("staffUsers", userRepository.countByRole("USER"));

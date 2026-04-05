@@ -22,4 +22,6 @@ public interface AssetRepository extends MongoRepository<Asset, String> {
     Optional<Asset> findBySerialNumber(String serialNumber);
 
     boolean existsBySerialNumber(String serialNumber);
+
+    long countByStatus(AssetStatus status);
 }

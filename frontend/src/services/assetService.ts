@@ -1,5 +1,5 @@
 import api from './api';
-import type { Asset, CreateAssetRequest, UpdateAssetRequest, AssignAssetRequest } from '../types';
+import type { Asset, CreateAssetRequest, UpdateAssetRequest, AssignAssetRequest, AssetHistory } from '../types';
 
 interface PageAssetResponse {
   content: Asset[];
@@ -10,11 +10,23 @@ interface PageAssetResponse {
 }
 
 export const assetService = {
-  getAll: async (page: number = 0, size: number = 100): Promise<Asset[]> => {
+  getAll: async (page: number = 0, size: number = 20): Promise<Asset[]> => {
     const response = await api.get<{ data: PageAssetResponse }>('/assets', {
       params: { page, size },
     });
     return response.data.data.content;
+  },
+
+  getMyAssets: async (page: number = 0, size: number = 100): Promise<Asset[]> => {
+    const response = await api.get<{ data: PageAssetResponse }>('/assets/my-assets', {
+      params: { page, size },
+    });
+    return response.data.data.content;
+  },
+
+  getMyHistories: async (): Promise<AssetHistory[]> => {
+    const response = await api.get<{ data: AssetHistory[] }>('/assets/my-histories');
+    return response.data.data;
   },
 
   getById: async (id: string): Promise<Asset> => {
@@ -43,6 +55,11 @@ export const assetService = {
 
   return: async (assetId: string): Promise<Asset> => {
     const response = await api.post<{ data: Asset }>(`/assets/${assetId}/return`);
+    return response.data.data;
+  },
+
+  returnMine: async (assetId: string): Promise<Asset> => {
+    const response = await api.post<{ data: Asset }>(`/assets/${assetId}/return-mine`);
     return response.data.data;
   },
 };

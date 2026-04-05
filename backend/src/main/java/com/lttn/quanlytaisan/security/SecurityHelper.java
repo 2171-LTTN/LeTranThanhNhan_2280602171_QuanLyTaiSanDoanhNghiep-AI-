@@ -1,25 +1,23 @@
 package com.lttn.quanlytaisan.security;
 
 import com.lttn.quanlytaisan.exception.BusinessException;
+import io.jsonwebtoken.Claims;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-/**
- * Helper component for extracting current user information from SecurityContext.
- * Centralizes security context access logic.
- */
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class SecurityHelper {
 
+    private final JwtUtil jwtUtil;
+
     /**
      * Extracts the current authenticated user's email from SecurityContext.
-     *
-     * @return the email of the current user
-     * @throws BusinessException if no authenticated user is found
      */
     public String getCurrentUserEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -41,12 +39,6 @@ public class SecurityHelper {
         throw new BusinessException("Unable to determine current user");
     }
 
-    /**
-     * Extracts the current authenticated user's email, or returns default value if not authenticated.
-     *
-     * @param defaultValue the default value to return if not authenticated
-     * @return the email of the current user or defaultValue
-     */
     public String getCurrentUserEmailOrDefault(String defaultValue) {
         try {
             return getCurrentUserEmail();
@@ -60,10 +52,24 @@ public class SecurityHelper {
     }
 
     /**
-     * Checks if the current user has ADMIN role.
-     *
-     * @return true if current user has ADMIN role
+     * Gets current user ID from JWT token claims.
      */
+    public String getCurrentUserIdOrThrow() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException("No authenticated user found");
+        }
+
+        String userId = jwtUtil.extractUserIdFromAuthentication(authentication);
+        if (userId != null) {
+            return userId;
+        }
+
+        String email = getCurrentUserEmail();
+        return email;
+    }
+
     public boolean isCurrentUserAdmin() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 

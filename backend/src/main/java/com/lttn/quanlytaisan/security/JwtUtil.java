@@ -33,12 +33,22 @@ public class JwtUtil {
 
     @PostConstruct
     public void init() {
-        log.info("Initializing JWT signing key");
-        byte[] keyBytes = Decoders.BASE64.decode(
-                java.util.Base64.getEncoder().encodeToString(secret.getBytes())
-        );
-        this.signingKey = Keys.hmacShaKeyFor(keyBytes);
-        log.info("JWT signing key initialized successfully");
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException(
+                    "JWT secret is not configured. Set the JWT_SECRET environment variable with a Base64-encoded key (at least 32 bytes).");
+        }
+        try {
+            byte[] keyBytes = Decoders.BASE64.decode(secret);
+            if (keyBytes.length < 32) {
+                throw new IllegalStateException(
+                        "JWT secret must be at least 256 bits (32 bytes) when Base64-decoded. Current length: " + keyBytes.length + " bytes.");
+            }
+            this.signingKey = Keys.hmacShaKeyFor(keyBytes);
+            log.info("JWT signing key initialized successfully ({} bytes)", keyBytes.length);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException(
+                    "JWT secret is not valid Base64. Please provide a Base64-encoded secret.", e);
+        }
     }
 
     public String extractUsername(String token) {
@@ -74,6 +84,13 @@ public class JwtUtil {
     public String generateToken(String username, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
+        return createToken(claims, username);
+    }
+
+    public String generateToken(String username, String role, String userId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
+        claims.put("userId", userId);
         return createToken(claims, username);
     }
 
@@ -113,5 +130,24 @@ public class JwtUtil {
     public String extractRole(String token) {
         Claims claims = extractAllClaims(token);
         return claims.get("role", String.class);
+    }
+
+    public String extractUserId(String token) {
+        Claims claims = extractAllClaims(token);
+        return claims.get("userId", String.class);
+    }
+
+    public String extractUserIdFromAuthentication(org.springframework.security.core.Authentication authentication) {
+        try {
+            if (authentication instanceof org.springframework.security.authentication.UsernamePasswordAuthenticationToken authToken) {
+                Object credentials = authToken.getCredentials();
+                if (credentials instanceof String token) {
+                    return extractUserId(token);
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Could not extract userId from authentication: {}", e.getMessage());
+        }
+        return null;
     }
 }

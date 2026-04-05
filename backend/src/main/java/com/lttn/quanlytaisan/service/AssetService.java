@@ -105,6 +105,16 @@ public class AssetService {
         String oldName = asset.getName();
         String oldCategory = asset.getCategory();
 
+        // Check for duplicate serial number — only when serial is actually being changed
+        if (request.getSerialNumber() != null
+                && !request.getSerialNumber().isBlank()
+                && !request.getSerialNumber().equals(asset.getSerialNumber())) {
+            if (assetRepository.existsBySerialNumber(request.getSerialNumber())) {
+                log.warn("Asset update failed - serial number already exists: {}", request.getSerialNumber());
+                throw new BusinessException("Serial number already exists: " + request.getSerialNumber());
+            }
+        }
+
         applyUpdates(asset, request);
         asset.setUpdatedAt(LocalDateTime.now());
 
@@ -220,14 +230,109 @@ public class AssetService {
         return assetMapper.toResponse(saved);
     }
 
+    // USER returns their own assigned asset
+    public AssetResponse returnMyAsset(String assetId, String userId, String performedBy) {
+        log.info("User {} returning their asset: {}", userId, assetId);
+
+        Asset asset = findAssetByIdOrThrow(assetId);
+
+        if (!userId.equals(asset.getAssignedTo())) {
+            log.warn("User {} attempted to return asset {} which is not assigned to them", userId, assetId);
+            throw new BusinessException("You can only return assets that are assigned to you");
+        }
+
+        validateAssetForReturn(asset);
+
+        asset.setAssignedTo(null);
+        asset.setStatus(AssetStatus.AVAILABLE);
+        asset.setUpdatedAt(LocalDateTime.now());
+
+        Asset saved = assetRepository.save(asset);
+
+        assetHistoryService.saveHistory(
+                saved.getId(),
+                saved.getName(),
+                userId,
+                performedBy,
+                performedBy,
+                AssetAction.RETURNED,
+                buildReturnDetails(performedBy)
+        );
+
+        log.info("Asset {} returned by user {}", saved.getName(), userId);
+
+        return assetMapper.toResponse(saved);
+    }
+
+    /** USER: report an asset as broken (must be assigned to them). */
+    public AssetResponse reportAssetBroken(String assetId, String userId, String performedBy) {
+        log.info("User {} reporting asset {} as broken", userId, assetId);
+
+        Asset asset = findAssetByIdOrThrow(assetId);
+
+        if (!userId.equals(asset.getAssignedTo())) {
+            log.warn("User {} cannot report asset {} as broken — not assigned to them", userId, assetId);
+            throw new BusinessException("You can only report assets that are assigned to you");
+        }
+
+        asset.setStatus(AssetStatus.BROKEN);
+        asset.setUpdatedAt(LocalDateTime.now());
+
+        Asset saved = assetRepository.save(asset);
+
+        assetHistoryService.saveHistory(
+                saved.getId(),
+                saved.getName(),
+                userId,
+                performedBy,
+                performedBy,
+                AssetAction.REPORTED_BROKEN,
+                String.format("Asset reported as broken by %s", performedBy)
+        );
+
+        log.info("Asset {} reported as broken by user {}", saved.getName(), userId);
+        return assetMapper.toResponse(saved);
+    }
+
+    /** ADMIN: mark a broken asset as repaired and available. */
+    public AssetResponse markAssetAvailable(String assetId, String performedBy) {
+        log.info("Admin {} marking asset {} as available after repair", performedBy, assetId);
+
+        Asset asset = findAssetByIdOrThrow(assetId);
+
+        if (asset.getStatus() != AssetStatus.BROKEN) {
+            log.warn("Cannot mark asset {} as available — status is {}", assetId, asset.getStatus());
+            throw new BusinessException("Only broken assets can be marked as available after repair");
+        }
+
+        asset.setAssignedTo(null);
+        asset.setStatus(AssetStatus.AVAILABLE);
+        asset.setUpdatedAt(LocalDateTime.now());
+
+        Asset saved = assetRepository.save(asset);
+
+        assetHistoryService.saveHistory(
+                saved.getId(),
+                saved.getName(),
+                null,
+                null,
+                performedBy,
+                AssetAction.REPAIRED,
+                "Asset repaired and marked as available"
+        );
+
+        log.info("Asset {} marked as available by {}", saved.getName(), performedBy);
+        return assetMapper.toResponse(saved);
+    }
+
     public Map<String, Long> getAssetStats() {
         log.debug("Fetching asset statistics");
 
         Map<String, Long> stats = new HashMap<>();
         stats.put("total", assetRepository.count());
-        stats.put("available", assetRepository.findByStatus(AssetStatus.AVAILABLE, Pageable.unpaged()).getTotalElements());
-        stats.put("inUse", assetRepository.findByStatus(AssetStatus.IN_USE, Pageable.unpaged()).getTotalElements());
-        stats.put("broken", assetRepository.findByStatus(AssetStatus.BROKEN, Pageable.unpaged()).getTotalElements());
+        stats.put("available", assetRepository.countByStatus(AssetStatus.AVAILABLE));
+        stats.put("inUse", assetRepository.countByStatus(AssetStatus.IN_USE));
+        stats.put("broken", assetRepository.countByStatus(AssetStatus.BROKEN));
 
         log.debug("Asset statistics: {}", stats);
 
@@ -277,6 +382,15 @@ public class AssetService {
         }
         if (request.getNote() != null) {
             asset.setNote(request.getNote());
+        }
+        if (request.getPurchaseDate() != null) {
+            asset.setPurchaseDate(parseDateOrThrow(request.getPurchaseDate()));
+        }
+        if (request.getPurchasePrice() != null) {
+            asset.setPurchasePrice(request.getPurchasePrice());
+        }
+        if (request.getWarrantyUntil() != null) {
+            asset.setWarrantyUntil(parseDateOrThrow(request.getWarrantyUntil()));
         }
     }
 

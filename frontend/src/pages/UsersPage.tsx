@@ -152,7 +152,7 @@ export default function UsersPage() {
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
           {error}
-          <button onClick={() => setError('')} className="ml-2 font-medium underline">{t('common.confirm')}</button>
+          <button type="button" onClick={() => setError('')} className="font-medium underline shrink-0">{t('common.dismiss')}</button>
         </div>
       )}
 

@@ -131,7 +131,7 @@ class AuthServiceTest {
             when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                     .thenReturn(new UsernamePasswordAuthenticationToken("test@example.com", "password123"));
             when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
-            when(jwtUtil.generateToken("test@example.com", "USER")).thenReturn("jwt_token_here");
+            when(jwtUtil.generateToken("test@example.com", "USER", "user-id-123")).thenReturn("jwt_token_here");
             when(userMapper.toResponse(testUser)).thenReturn(userResponse);
 
             LoginResponse response = authService.login(loginRequest);
@@ -144,7 +144,7 @@ class AuthServiceTest {
 
             verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
             verify(userRepository).findByEmail("test@example.com");
-            verify(jwtUtil).generateToken("test@example.com", "USER");
+            verify(jwtUtil).generateToken("test@example.com", "USER", "user-id-123");
         }
 
         @Test

@@ -91,11 +91,8 @@ public class UserService {
                     return new ResourceNotFoundException("User not found: " + id);
                 });
 
-        if (user.getRole().equals("ADMIN")) {
-            long adminCount = userRepository.countByRole("ADMIN");
-            if (adminCount <= 1) {
-                throw new BusinessException("Cannot delete the last admin user");
-            }
+        if ("ADMIN".equals(user.getRole())) {
+            throw new BusinessException("Admin accounts cannot be deleted");
         }
 
         userRepository.delete(user);

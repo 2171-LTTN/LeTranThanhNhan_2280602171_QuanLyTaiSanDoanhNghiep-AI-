@@ -1,5 +1,6 @@
 package com.lttn.quanlytaisan.dto.request;
 
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,4 +28,11 @@ public class UpdateAssetRequest {
     private String location;
 
     private String note;
+
+    private String purchaseDate;
+
+    @Positive(message = "Purchase price must be positive")
+    private Double purchasePrice;
+
+    private String warrantyUntil;
 }

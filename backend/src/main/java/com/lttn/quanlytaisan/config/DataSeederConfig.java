@@ -22,10 +22,18 @@ import java.time.LocalDateTime;
  * To run: Add @ActiveProfiles("seed") or run with --spring.profiles.active=seed
  * NEVER run in production - passwords are logged in summary.
  */
+/**
+ * Seeds the database with realistic sample data.
+ * Only runs when the "seed" profile is explicitly activated.
+ *
+ * To activate: --spring.profiles.active=seed (or SPRING_PROFILES=seed env var)
+ * NEVER run in production — sample passwords are not exposed at INFO level,
+ * but seeding a live DB is still destructive.
+ */
 @Configuration
 @RequiredArgsConstructor
 @Slf4j
-@Profile({"dev", "seed"})
+@Profile("seed")          // <-- only runs when "seed" is EXPLICITLY active
 public class DataSeederConfig {
 
     private final PasswordEncoder passwordEncoder;

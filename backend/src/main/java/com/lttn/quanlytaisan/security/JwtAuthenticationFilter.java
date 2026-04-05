@@ -69,19 +69,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
-            if (jwtUtil.validateToken(
-                    extractToken(request.getHeader(AUTHORIZATION_HEADER)),
-                    userDetails.getUsername())) {
+            String token = extractToken(request.getHeader(AUTHORIZATION_HEADER));
+            if (jwtUtil.validateToken(token, userDetails.getUsername())) {
+                String userId = jwtUtil.extractUserId(token);
 
+                // Credentials must hold the raw JWT so SecurityHelper#getCurrentUserIdOrThrow can read the userId claim.
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
-                        null,
+                        token,
                         userDetails.getAuthorities()
                 );
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
                 SecurityContextHolder.getContext().setAuthentication(authToken);
 
-                log.debug("Successfully authenticated user: {}", maskEmail(userEmail));
+                log.debug("Successfully authenticated user: {} (ID: {})", maskEmail(userEmail), userId != null ? userId : "N/A");
             }
         } catch (Exception e) {
             log.warn("Failed to load user details for: {}", maskEmail(userEmail));

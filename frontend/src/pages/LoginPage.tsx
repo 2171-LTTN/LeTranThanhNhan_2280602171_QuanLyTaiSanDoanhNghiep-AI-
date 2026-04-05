@@ -59,7 +59,7 @@ export default function LoginPage() {
               : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
           }`}
         >
-          Tiếng Việt
+          {t('common.languageVi')}
         </button>
         <button
           onClick={() => handleLanguageChange('en')}
@@ -69,7 +69,7 @@ export default function LoginPage() {
               : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
           }`}
         >
-          English
+          {t('common.languageEn')}
         </button>
       </div>
 

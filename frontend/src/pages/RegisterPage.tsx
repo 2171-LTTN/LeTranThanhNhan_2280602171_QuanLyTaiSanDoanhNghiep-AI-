@@ -52,13 +52,13 @@ export default function RegisterPage() {
           onClick={() => handleLanguageChange('vi')}
           className={`px-3 py-1.5 text-xs font-medium rounded-lg ${currentLang === 'vi' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
         >
-          Tiếng Việt
+          {t('common.languageVi')}
         </button>
         <button
           onClick={() => handleLanguageChange('en')}
           className={`px-3 py-1.5 text-xs font-medium rounded-lg ${currentLang === 'en' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
         >
-          English
+          {t('common.languageEn')}
         </button>
       </div>
 

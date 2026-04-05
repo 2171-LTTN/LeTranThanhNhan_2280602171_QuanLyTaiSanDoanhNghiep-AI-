@@ -111,6 +111,38 @@ export interface DashboardStats {
   staffUsers: number;
 }
 
+export type RequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+export interface AssetRequest {
+  id: string;
+  requestedByUserId: string;
+  requestedByUserName: string;
+  requestedByUserEmail: string;
+  assetName: string | null;
+  category: string;
+  reason: string;
+  note?: string;
+  status: RequestStatus;
+  reviewedBy?: string;
+  reviewedByName?: string;
+  reviewNote?: string;
+  reviewedAt?: string;
+  assetId?: string;
+  createdAt: string;
+}
+
+/** Body for POST /requests — user chỉ gửi danh mục + lý do */
+export interface CreateAllocationRequest {
+  category: string;
+  reason: string;
+  note?: string;
+}
+
+export interface ReviewAssetRequest {
+  reviewNote?: string;
+  assetId?: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message?: string;

@@ -1,5 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
 import { assetService } from '../services/assetService';
 import { userService } from '../services/userService';
 import type { Asset, User } from '../types';
@@ -43,6 +44,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function AssetsPage() {
   const { t } = useTranslation();
+  const { isAdmin } = useAuth();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,9 @@ export default function AssetsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState<Asset | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Asset | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [submittingAdd, setSubmittingAdd] = useState(false);
+  const [submittingAssign, setSubmittingAssign] = useState(false);
+  const [submittingDelete, setSubmittingDelete] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
   // Form states
@@ -114,7 +118,7 @@ export default function AssetsPage() {
 
   const handleAdd = async (e: FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
+    setSubmittingAdd(true);
     try {
       await assetService.create({
         name: formName,
@@ -136,14 +140,14 @@ export default function AssetsPage() {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errors.saveFailed');
       setError(msg);
     } finally {
-      setSubmitting(false);
+      setSubmittingAdd(false);
     }
   };
 
   const handleAssign = async (e: FormEvent) => {
     e.preventDefault();
     if (!showAssignModal) return;
-    setSubmitting(true);
+    setSubmittingAssign(true);
     try {
       await assetService.assign(showAssignModal.id, { userId: formAssignUserId });
       setShowAssignModal(null);
@@ -154,7 +158,7 @@ export default function AssetsPage() {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errors.saveFailed');
       setError(msg);
     } finally {
-      setSubmitting(false);
+      setSubmittingAssign(false);
     }
   };
 
@@ -171,7 +175,7 @@ export default function AssetsPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    setSubmitting(true);
+    setSubmittingDelete(true);
     try {
       await assetService.delete(deleteTarget.id);
       setDeleteTarget(null);
@@ -181,7 +185,7 @@ export default function AssetsPage() {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errors.saveFailed');
       setError(msg);
     } finally {
-      setSubmitting(false);
+      setSubmittingDelete(false);
     }
   };
 
@@ -204,15 +208,17 @@ export default function AssetsPage() {
           <h1 className="text-2xl font-bold text-gray-900">{t('assets.title')}</h1>
           <p className="text-gray-500 mt-1">{t('common.filter')}</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          {t('assets.addAsset')}
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            {t('assets.addAsset')}
+          </button>
+        )}
       </div>
 
       {successMsg && (
@@ -224,7 +230,7 @@ export default function AssetsPage() {
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
           {error}
-          <button onClick={() => setError('')} className="ml-2 font-medium underline">{t('common.confirm')}</button>
+          <button type="button" onClick={() => setError('')} className="font-medium underline shrink-0">{t('common.dismiss')}</button>
         </div>
       )}
 
@@ -256,7 +262,7 @@ export default function AssetsPage() {
                     <td className="px-6 py-4 text-sm text-gray-600">{asset.assignedToName || '—'}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{asset.location || '—'}</td>
                     <td className="px-6 py-4 flex items-center gap-2">
-                      {asset.status === 'AVAILABLE' && (
+                      {isAdmin && asset.status === 'AVAILABLE' && (
                         <button
                           onClick={() => { setShowAssignModal(asset); fetchUsers(); }}
                           className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
@@ -264,7 +270,7 @@ export default function AssetsPage() {
                           {t('assets.assign')}
                         </button>
                       )}
-                      {asset.status === 'IN_USE' && (
+                      {isAdmin && asset.status === 'IN_USE' && (
                         <button
                           onClick={() => handleReturn(asset)}
                           className="text-xs text-blue-600 hover:text-blue-800 font-medium"
@@ -272,12 +278,14 @@ export default function AssetsPage() {
                           {t('assets.return')}
                         </button>
                       )}
-                      <button
-                        onClick={() => setDeleteTarget(asset)}
-                        className="text-xs text-red-600 hover:text-red-800 font-medium"
-                      >
-                        {t('common.delete')}
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => setDeleteTarget(asset)}
+                          className="text-xs text-red-600 hover:text-red-800 font-medium"
+                        >
+                          {t('common.delete')}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -341,7 +349,7 @@ export default function AssetsPage() {
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button type="button" onClick={() => { setShowAddModal(false); resetForm(); }} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">{t('common.cancel')}</button>
-              <button type="submit" disabled={submitting} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50">{submitting ? '...' : t('common.create')}</button>
+              <button type="submit" disabled={submittingAdd} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50">{submittingAdd ? '...' : t('common.create')}</button>
             </div>
           </form>
         </Modal>
@@ -360,7 +368,7 @@ export default function AssetsPage() {
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button type="button" onClick={() => { setShowAssignModal(null); resetForm(); }} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">{t('common.cancel')}</button>
-              <button type="submit" disabled={submitting || !formAssignUserId} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50">{submitting ? '...' : t('assets.assign')}</button>
+              <button type="submit" disabled={submittingAssign || !formAssignUserId} className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50">{submittingAssign ? '...' : t('assets.assign')}</button>
             </div>
           </form>
         </Modal>
@@ -374,7 +382,7 @@ export default function AssetsPage() {
           </p>
           <div className="flex justify-end gap-3">
             <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">{t('common.cancel')}</button>
-            <button onClick={handleDelete} disabled={submitting} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50">{submitting ? '...' : t('common.delete')}</button>
+            <button onClick={handleDelete} disabled={submittingDelete} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50">{submittingDelete ? '...' : t('common.delete')}</button>
           </div>
         </Modal>
       )}

@@ -3,6 +3,7 @@ package com.lttn.quanlytaisan.controller;
 import com.lttn.quanlytaisan.dto.request.CreateUserRequest;
 import com.lttn.quanlytaisan.dto.response.ApiResponse;
 import com.lttn.quanlytaisan.dto.response.UserResponse;
+import com.lttn.quanlytaisan.repository.UserRepository;
 import com.lttn.quanlytaisan.security.SecurityHelper;
 import com.lttn.quanlytaisan.service.UserService;
 import jakarta.validation.Valid;
@@ -25,6 +26,7 @@ public class UserController {
 
     private final UserService userService;
     private final SecurityHelper securityHelper;
+    private final UserRepository userRepository;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -80,6 +82,28 @@ public class UserController {
         userService.deleteUser(id, performedBy);
 
         return ResponseEntity.ok(ApiResponse.success(null, "User deleted successfully"));
+    }
+
+    /**
+     * TEMP: Creates the first admin account when no users exist.
+     * This endpoint is open (no auth) and self-destructs after use.
+     * Access: POST /api/users/init-admin
+     * Body: { "email": "...", "password": "...", "name": "..." }
+     */
+    @PostMapping("/init-admin")
+    public ResponseEntity<ApiResponse<UserResponse>> initFirstAdmin(
+            @RequestBody CreateUserRequest request
+    ) {
+        if (userRepository.countByRole("ADMIN") > 0) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("System already has at least one admin. Login with existing admin to create more."));
+        }
+        request.setRole("ADMIN");
+        String performedBy = "system";
+        UserResponse user = userService.createUser(request, performedBy);
+        log.info("First admin account created via init-admin: {}", maskEmail(user.getEmail()));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(user, "Admin account created successfully"));
     }
 
     private String maskEmail(String email) {

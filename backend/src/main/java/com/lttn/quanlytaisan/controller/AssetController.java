@@ -35,6 +35,8 @@ public class AssetController {
     private final AssetHistoryService assetHistoryService;
     private final SecurityHelper securityHelper;
 
+    // ===== USER & ADMIN: View Assets =====
+
     @GetMapping
     public ResponseEntity<ApiResponse<Page<AssetResponse>>> getAllAssets(
             @RequestParam(defaultValue = "0") int page,
@@ -58,6 +60,21 @@ public class AssetController {
         return ResponseEntity.ok(ApiResponse.success(assets));
     }
 
+    @GetMapping("/my-assets")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<Page<AssetResponse>>> getMyAssets(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        String currentUserId = securityHelper.getCurrentUserIdOrThrow();
+        log.debug("GET /api/assets/my-assets - userId: {}, page: {}", currentUserId, page);
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<AssetResponse> assets = assetService.getAssetsByUser(currentUserId, pageable);
+
+        return ResponseEntity.ok(ApiResponse.success(assets));
+    }
+
     @GetMapping("/histories")
     public ResponseEntity<ApiResponse<List<AssetHistoryResponse>>> getAllHistories() {
         log.debug("GET /api/assets/histories");
@@ -65,6 +82,27 @@ public class AssetController {
         List<AssetHistoryResponse> histories = assetHistoryService.getAllHistories();
 
         return ResponseEntity.ok(ApiResponse.success(histories));
+    }
+
+    @GetMapping("/my-histories")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<List<AssetHistoryResponse>>> getMyHistories() {
+        String currentUserId = securityHelper.getCurrentUserIdOrThrow();
+        log.debug("GET /api/assets/my-histories - userId: {}", currentUserId);
+
+        List<AssetHistoryResponse> histories = assetHistoryService.getUserAssetHistory(currentUserId);
+
+        return ResponseEntity.ok(ApiResponse.success(histories));
+    }
+
+    /** Static path must be registered before /{id} so "stats" is not captured as an asset id. */
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> getAssetStats() {
+        log.debug("GET /api/assets/stats");
+
+        Map<String, Long> stats = assetService.getAssetStats();
+
+        return ResponseEntity.ok(ApiResponse.success(stats));
     }
 
     @GetMapping("/{id}")
@@ -75,6 +113,8 @@ public class AssetController {
 
         return ResponseEntity.ok(ApiResponse.success(asset));
     }
+
+    // ===== ADMIN ONLY: Asset Management =====
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -140,6 +180,19 @@ public class AssetController {
         return ResponseEntity.ok(ApiResponse.success(asset, "Asset returned successfully"));
     }
 
+    // USER can return their own assigned asset
+    @PostMapping("/{id}/return-mine")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<ApiResponse<AssetResponse>> returnMyAsset(@PathVariable String id) {
+        String currentUserId = securityHelper.getCurrentUserIdOrThrow();
+        String currentUserEmail = securityHelper.getCurrentUserEmailOrDefault("system");
+        log.info("POST /api/assets/{}/return-mine - userId: {}", id, currentUserId);
+
+        AssetResponse asset = assetService.returnMyAsset(id, currentUserId, currentUserEmail);
+
+        return ResponseEntity.ok(ApiResponse.success(asset, "Asset returned successfully"));
+    }
+
     @GetMapping("/{id}/history")
     public ResponseEntity<ApiResponse<List<AssetHistoryResponse>>> getAssetHistory(@PathVariable String id) {
         log.debug("GET /api/assets/{}/history", id);
@@ -149,12 +202,30 @@ public class AssetController {
         return ResponseEntity.ok(ApiResponse.success(history));
     }
 
-    @GetMapping("/stats")
-    public ResponseEntity<ApiResponse<Map<String, Long>>> getAssetStats() {
-        log.debug("GET /api/assets/stats");
+    // ===== BROKEN ASSET WORKFLOW =====
 
-        Map<String, Long> stats = assetService.getAssetStats();
+    /** User reports an asset they hold as broken. */
+    @PostMapping("/{id}/report-broken")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<AssetResponse>> reportAssetBroken(@PathVariable String id) {
+        String userId = securityHelper.getCurrentUserIdOrThrow();
+        String performedBy = securityHelper.getCurrentUserEmailOrDefault("system");
+        log.info("POST /api/assets/{}/report-broken - userId: {}", id, userId);
 
-        return ResponseEntity.ok(ApiResponse.success(stats));
+        AssetResponse asset = assetService.reportAssetBroken(id, userId, performedBy);
+
+        return ResponseEntity.ok(ApiResponse.success(asset, "Asset reported as broken"));
+    }
+
+    /** Admin marks a broken asset as repaired and available. */
+    @PostMapping("/{id}/mark-available")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<AssetResponse>> markAssetAvailable(@PathVariable String id) {
+        String performedBy = securityHelper.getCurrentUserEmailOrDefault("system");
+        log.info("POST /api/assets/{}/mark-available - admin: {}", id, performedBy);
+
+        AssetResponse asset = assetService.markAssetAvailable(id, performedBy);
+
+        return ResponseEntity.ok(ApiResponse.success(asset, "Asset marked as available"));
     }
 }
