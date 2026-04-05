@@ -27,7 +27,6 @@ Thumbs.db
 logs/
 
 # ==================== Temporary Data ====================
-exported-data.json
 *.tmp
 *.bak
 
